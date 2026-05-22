@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: medical-platform-config
+  namespace: medical-emergency
+data:
+  KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+  REDIS_HOST: redis
+  REDIS_PORT: "6379"
+  OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: http://jaeger:4318/v1/traces
+  JWT_ISSUER: medical-emergency-coordination-system
+  JWT_JWK_SET_URI: http://api-gateway:8080/.well-known/jwks.json

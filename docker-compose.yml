@@ -1,0 +1,176 @@
+name: medical-emergency-coordination-system
+
+services:
+  kafka:
+    image: bitnami/kafka:3.7
+    ports:
+      - "29092:29092"
+    environment:
+      ALLOW_PLAINTEXT_LISTENER: "yes"
+      KAFKA_CFG_NODE_ID: 0
+      KAFKA_CFG_PROCESS_ROLES: controller,broker
+      KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: 0@kafka:9093
+      KAFKA_CFG_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093,EXTERNAL://:29092
+      KAFKA_CFG_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,EXTERNAL://localhost:29092
+      KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_CFG_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_CFG_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE: "true"
+      KAFKA_CFG_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_CFG_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_CFG_TRANSACTION_STATE_LOG_MIN_ISR: 1
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/bitnami/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list >/dev/null 2>&1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7.4-alpine
+    ports:
+      - "6379:6379"
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  user-db:
+    image: postgres:17-alpine
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_DB: user_service
+      POSTGRES_USER: medical
+      POSTGRES_PASSWORD: medical
+    volumes:
+      - user-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U medical -d user_service"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  emergency-db:
+    image: postgres:17-alpine
+    ports:
+      - "5434:5432"
+    environment:
+      POSTGRES_DB: emergency_request_service
+      POSTGRES_USER: medical
+      POSTGRES_PASSWORD: medical
+    volumes:
+      - emergency-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U medical -d emergency_request_service"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  ambulance-db:
+    image: postgres:17-alpine
+    ports:
+      - "5435:5432"
+    environment:
+      POSTGRES_DB: ambulance_service
+      POSTGRES_USER: medical
+      POSTGRES_PASSWORD: medical
+    volumes:
+      - ambulance-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U medical -d ambulance_service"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  hospital-db:
+    image: postgres:17-alpine
+    ports:
+      - "5436:5432"
+    environment:
+      POSTGRES_DB: hospital_service
+      POSTGRES_USER: medical
+      POSTGRES_PASSWORD: medical
+    volumes:
+      - hospital-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U medical -d hospital_service"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  case-db:
+    image: postgres:17-alpine
+    ports:
+      - "5437:5432"
+    environment:
+      POSTGRES_DB: case_service
+      POSTGRES_USER: medical
+      POSTGRES_PASSWORD: medical
+    volumes:
+      - case-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U medical -d case_service"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  location-postgis:
+    image: postgis/postgis:17-3.5
+    ports:
+      - "5438:5432"
+    environment:
+      POSTGRES_DB: location_service
+      POSTGRES_USER: medical
+      POSTGRES_PASSWORD: medical
+    volumes:
+      - location-postgis-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U medical -d location_service"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  jaeger:
+    image: jaegertracing/all-in-one:1.62
+    ports:
+      - "16686:16686"
+      - "4317:4317"
+      - "4318:4318"
+    environment:
+      COLLECTOR_OTLP_ENABLED: "true"
+
+  prometheus:
+    image: prom/prometheus:v2.55.1
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./observability/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  grafana:
+    image: grafana/grafana:11.3.0
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./observability/grafana/provisioning:/etc/grafana/provisioning:ro
+    depends_on:
+      - prometheus
+
+volumes:
+  redis-data:
+  user-db-data:
+  emergency-db-data:
+  ambulance-db-data:
+  hospital-db-data:
+  case-db-data:
+  location-postgis-data:
+  grafana-data:

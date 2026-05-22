@@ -1,0 +1,81 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: matching-service
+  namespace: medical-emergency
+  labels:
+    app: matching-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: matching-service
+  template:
+    metadata:
+      labels:
+        app: matching-service
+    spec:
+      containers:
+        - name: matching-service
+          image: medical/matching-service:0.0.1-SNAPSHOT
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8085
+          envFrom:
+            - configMapRef:
+                name: medical-platform-config
+          env:
+            - name: SERVER_PORT
+              value: "8085"
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: 8085
+            initialDelaySeconds: 20
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 8085
+            initialDelaySeconds: 30
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: "1"
+              memory: 1Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: matching-service
+  namespace: medical-emergency
+spec:
+  selector:
+    app: matching-service
+  ports:
+    - name: http
+      port: 8085
+      targetPort: 8085
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: matching-service
+  namespace: medical-emergency
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: matching-service
+  minReplicas: 1
+  maxReplicas: 5
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70

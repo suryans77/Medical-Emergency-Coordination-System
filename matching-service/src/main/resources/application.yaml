@@ -1,0 +1,64 @@
+server:
+  port: ${SERVER_PORT:8085}
+
+spring:
+  application:
+    name: matching-service
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      timeout: 2s
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:29092}
+    consumer:
+      auto-offset-reset: earliest
+      group-id: ${spring.application.name}
+      properties:
+        spring.json.trusted.packages: org.example.*
+    producer:
+      acks: all
+      retries: 10
+      properties:
+        enable.idempotence: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: when_authorized
+  metrics:
+    tags:
+      application: ${spring.application.name}
+  tracing:
+    sampling:
+      probability: ${TRACING_SAMPLING_PROBABILITY:1.0}
+  otlp:
+    tracing:
+      endpoint: ${OTEL_EXPORTER_OTLP_TRACES_ENDPOINT:http://localhost:4318/v1/traces}
+
+medical:
+  events:
+    topics:
+      emergency-events: emergency-events
+      ambulance-events: ambulance-events
+      hospital-events: hospital-events
+      matching-events: matching-events
+  grpc:
+    location-service-target: ${LOCATION_GRPC_TARGET:localhost:9094}
+  idempotency:
+    enabled: true
+    redis-key-prefix: processed-event
+    processed-event-retention: 30d
+  matching:
+    assignment-lock-ttl: 30s
+    stale-ambulance-timeout: 45s
+  security:
+    jwt:
+      issuer: ${JWT_ISSUER:medical-emergency-coordination-system}
+      jwk-set-uri: ${JWT_JWK_SET_URI:http://localhost:8080/.well-known/jwks.json}
