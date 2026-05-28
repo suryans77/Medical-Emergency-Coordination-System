@@ -19,6 +19,7 @@
     <description>Real-time emergency medical coordination platform</description>
 
     <modules>
+        <module>shared</module>
         <module>api-gateway</module>
         <module>user-service</module>
         <module>emergency-request-service</module>

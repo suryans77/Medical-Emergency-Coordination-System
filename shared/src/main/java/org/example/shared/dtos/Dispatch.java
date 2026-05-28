@@ -1,8 +1,9 @@
-package org.example.shared.events;
+package org.example.shared.dtos;
 
 import java.util.UUID;
 
-public record DispatchAssigned(
+public record Dispatch(
         UUID emergencyId,
         UUID ambulanceId
-) {}
+) {
+}
