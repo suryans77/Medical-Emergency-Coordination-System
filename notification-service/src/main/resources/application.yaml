@@ -1,5 +1,5 @@
 server:
-  port: ${SERVER_PORT:8088}
+  port: ${SERVER_PORT:8088} # Note: Your service will run on 8088 locally!
 
 spring:
   application:
@@ -9,6 +9,10 @@ spring:
     consumer:
       auto-offset-reset: earliest
       group-id: ${spring.application.name}
+      # --- INTEGRATED FROM MVP: Tells Kafka to convert bytes to Objects ---
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      # --------------------------------------------------------------------
       properties:
         spring.json.trusted.packages: org.example.*
     producer:

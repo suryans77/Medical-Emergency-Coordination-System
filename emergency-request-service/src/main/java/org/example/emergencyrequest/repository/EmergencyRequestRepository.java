@@ -1,6 +1,6 @@
-package org.example.ambulance.repository;
+package org.example.emergencyrequest.repository;
 
-import org.example.ambulance.entity.EmergencyRequest;
+import org.example.emergencyrequest.entity.EmergencyRequest;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

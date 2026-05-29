@@ -1,4 +1,4 @@
-package org.example.ambulance.entity;
+package org.example.emergencyrequest.entity;
 
 import jakarta.persistence.*;
 import org.example.shared.enums.Severity;

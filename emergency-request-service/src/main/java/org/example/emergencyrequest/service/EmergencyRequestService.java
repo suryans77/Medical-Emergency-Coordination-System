@@ -1,9 +1,9 @@
-package org.example.ambulance.service;
+package org.example.emergencyrequest.service;
 
+import org.example.emergencyrequest.entity.EmergencyRequest;
+import org.example.emergencyrequest.producer.EmergencyRequestProducer;
+import org.example.emergencyrequest.repository.EmergencyRequestRepository;
 import org.example.shared.events.EmergencyRequested;
-import org.example.ambulance.entity.EmergencyRequest;
-import org.example.ambulance.producer.EmergencyRequestProducer;
-import org.example.ambulance.repository.EmergencyRequestRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

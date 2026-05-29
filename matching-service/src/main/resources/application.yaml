@@ -14,11 +14,15 @@ spring:
     consumer:
       auto-offset-reset: earliest
       group-id: ${spring.application.name}
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
       properties:
         spring.json.trusted.packages: org.example.*
     producer:
       acks: all
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
       retries: 10
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
       properties:
         enable.idempotence: true
 

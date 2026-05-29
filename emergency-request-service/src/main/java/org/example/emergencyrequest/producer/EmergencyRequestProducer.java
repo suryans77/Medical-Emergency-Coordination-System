@@ -1,4 +1,4 @@
-package org.example.ambulance.producer;
+package org.example.emergencyrequest.producer;
 
 import org.example.shared.config.KafkaTopics;
 import org.example.shared.events.EmergencyRequested;

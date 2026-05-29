@@ -18,13 +18,11 @@ public class AmbulanceService {
         this.repository = repository;
     }
 
-    // This method will be exposed via a Controller later for the Matching Service to call
     @Transactional(readOnly = true)
     public Optional<Ambulance> getAvailableAmbulance() {
         return repository.findFirstByStatus(AmbulanceStatus.AVAILABLE);
     }
 
-    // Automatically runs once when the Spring Boot application boots up
     @PostConstruct
     public void seedInitialData() {
         if (repository.count() == 0) {
@@ -36,14 +34,14 @@ public class AmbulanceService {
 
             Ambulance ambulanceB = new Ambulance();
             ambulanceB.setName("Ambulance B");
-            ambulanceB.setLatitude(20.30); // Placed slightly north for testing
+            ambulanceB.setLatitude(20.30);
             ambulanceB.setLongitude(85.81);
             ambulanceB.setStatus(AmbulanceStatus.AVAILABLE);
 
             repository.save(ambulanceA);
             repository.save(ambulanceB);
 
-            System.out.println("✅ Phase 1 Mock Data Seeded: Ambulance A & B are AVAILABLE.");
+            System.out.println("Phase 1 mock data seeded: Ambulance A and B are AVAILABLE.");
         }
     }
 }
