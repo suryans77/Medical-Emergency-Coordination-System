@@ -1,7 +1,7 @@
 package org.example.emergencyrequest.controller;
 
 import org.example.emergencyrequest.service.EmergencyRequestService;
-import org.example.shared.dtos.EmergencyRequest;
+import org.example.shared.dtos.EmergencyRequestDTO;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -18,7 +18,7 @@ public class EmergencyRequestController {
     }
 
     @PostMapping
-    public ResponseEntity<String> receiveEmergencyRequest(@RequestBody EmergencyRequest requestDTO) {
+    public ResponseEntity<String> receiveEmergencyRequest(@RequestBody EmergencyRequestDTO requestDTO) {
         UUID generatedId = service.processEmergency(requestDTO);
 
         return ResponseEntity.ok("Emergency Request successfully received and registered. System ID: " + generatedId);

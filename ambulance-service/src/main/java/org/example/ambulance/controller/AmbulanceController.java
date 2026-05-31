@@ -1,6 +1,7 @@
 package org.example.ambulance.controller;
 
 import org.example.ambulance.service.AmbulanceService;
+import org.example.shared.dtos.Ambulance;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -17,9 +18,9 @@ public class AmbulanceController {
     }
 
     @GetMapping("/available")
-    public ResponseEntity<org.example.shared.dtos.Ambulance> getFirstAvailable() {
+    public ResponseEntity<Ambulance> getFirstAvailable() {
         return service.getAvailableAmbulance()
-                .map(amb -> new org.example.shared.dtos.Ambulance(
+                .map(amb -> new Ambulance(
                         amb.getId(),
                         amb.getLatitude(),
                         amb.getLongitude(),

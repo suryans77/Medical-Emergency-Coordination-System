@@ -1,0 +1,10 @@
+### Send an Emergency Request
+POST http://localhost:8082/emergency
+Content-Type: application/json
+
+{
+  "patientId": "Patient-007",
+  "severity": "CRITICAL",
+  "latitude": 20.29,
+  "longitude": 85.81
+}

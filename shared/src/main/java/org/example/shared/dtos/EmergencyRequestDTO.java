@@ -2,7 +2,7 @@ package org.example.shared.dtos;
 
 import org.example.shared.enums.Severity;
 
-public record EmergencyRequest(
+public record EmergencyRequestDTO(
         String patientId,
         Severity severity,
         double latitude,

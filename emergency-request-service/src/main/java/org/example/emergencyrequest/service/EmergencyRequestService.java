@@ -3,6 +3,7 @@ package org.example.emergencyrequest.service;
 import org.example.emergencyrequest.entity.EmergencyRequest;
 import org.example.emergencyrequest.producer.EmergencyRequestProducer;
 import org.example.emergencyrequest.repository.EmergencyRequestRepository;
+import org.example.shared.dtos.EmergencyRequestDTO;
 import org.example.shared.events.EmergencyRequested;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,7 +22,7 @@ public class EmergencyRequestService {
     }
 
     @Transactional
-    public UUID processEmergency(org.example.shared.dtos.EmergencyRequest requestDTO) {
+    public UUID processEmergency(EmergencyRequestDTO requestDTO) {
         EmergencyRequest entity = new EmergencyRequest();
         entity.setPatientId(requestDTO.patientId());
         entity.setSeverity(requestDTO.severity());
