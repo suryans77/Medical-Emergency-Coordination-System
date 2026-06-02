@@ -2,8 +2,8 @@ package org.example.shared.events;
 
 import java.util.UUID;
 
-public record DispatchAssigned(
+public record HospitalAssigned(
         UUID emergencyId,
-        UUID ambulanceId,
-        UUID hospitalId
+        UUID hospitalId,
+        String hospitalName
 ) {}

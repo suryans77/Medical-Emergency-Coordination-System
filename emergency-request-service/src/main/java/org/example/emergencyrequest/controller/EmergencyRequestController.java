@@ -1,7 +1,7 @@
 package org.example.emergencyrequest.controller;
 
 import org.example.emergencyrequest.service.EmergencyRequestService;
-import org.example.shared.dtos.EmergencyRequestDTO;
+import org.example.shared.dto.EmergencyRequestDTO;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 

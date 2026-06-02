@@ -1,7 +1,7 @@
 package org.example.matching.service;
 
 import org.example.matching.producer.DispatchProducer;
-import org.example.shared.dtos.Ambulance;
+import org.example.shared.dto.Ambulance;
 import org.example.shared.events.DispatchAssigned;
 import org.example.shared.events.EmergencyRequested;
 import org.springframework.stereotype.Service;
@@ -29,7 +29,8 @@ public class MatchingService {
                 // 2. Create the association event
                 DispatchAssigned dispatchEvent = new DispatchAssigned(
                         event.emergencyId(),
-                        availableAmbulance.ambulanceId()
+                        availableAmbulance.ambulanceId(),
+                        null
                 );
 
                 // 3. Broadcast the successful match

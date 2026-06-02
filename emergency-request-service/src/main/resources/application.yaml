@@ -5,7 +5,7 @@ spring:
   application:
     name: emergency-request-service
   datasource:
-    url: jdbc:postgresql://${EMERGENCY_DB_HOST:localhost}:${EMERGENCY_DB_PORT:5434}/${EMERGENCY_DB_NAME:emergency_request_service}
+    url: jdbc:postgresql://${EMERGENCY_DB_HOST:localhost}:${EMERGENCY_DB_PORT:5434}/${EMERGENCY_DB_NAME:emergency_request_db}
     username: ${EMERGENCY_DB_USERNAME:medical}
     password: ${EMERGENCY_DB_PASSWORD:medical}
   flyway:

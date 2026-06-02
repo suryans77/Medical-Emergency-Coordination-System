@@ -1,0 +1,12 @@
+### Get all available ambulances
+GET http://localhost:8083/ambulances?status=AVAILABLE
+Accept: application/json
+
+### Reserve an ambulance
+PATCH http://localhost:8083/ambulances/<PASTE-UUID-HERE>/status
+Content-Type: application/json
+
+{
+  "status": "RESERVED"
+}
+

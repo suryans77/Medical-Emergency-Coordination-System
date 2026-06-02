@@ -36,7 +36,7 @@ services:
     volumes:
       - emergency-db-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U medical -d emergency_request_service"]
+      test: ["CMD-SHELL", "pg_isready -U medical -d emergency_request_db"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -52,7 +52,23 @@ services:
     volumes:
       - ambulance-db-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U medical -d ambulance_service"]
+      test: ["CMD-SHELL", "pg_isready -U medical -d ambulance_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  hospital-db:
+    image: postgres:17-alpine
+    ports:
+      - "5436:5432"
+    environment:
+      POSTGRES_DB: hospital_db
+      POSTGRES_USER: medical
+      POSTGRES_PASSWORD: medical
+    volumes:
+      - hospital-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U medical -d hospital_db" ]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -60,3 +76,4 @@ services:
 volumes:
   emergency-db-data:
   ambulance-db-data:
+  hospital-db-data:

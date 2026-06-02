@@ -5,7 +5,7 @@ spring:
   application:
     name: hospital-service
   datasource:
-    url: jdbc:postgresql://${HOSPITAL_DB_HOST:localhost}:${HOSPITAL_DB_PORT:5436}/${HOSPITAL_DB_NAME:hospital_service}
+    url: jdbc:postgresql://${HOSPITAL_DB_HOST:localhost}:${HOSPITAL_DB_PORT:5436}/${HOSPITAL_DB_NAME:hospital_db}
     username: ${HOSPITAL_DB_USERNAME:medical}
     password: ${HOSPITAL_DB_PASSWORD:medical}
   flyway:
@@ -13,7 +13,7 @@ spring:
     locations: classpath:db/migration
   jpa:
     hibernate:
-      ddl-auto: none
+      ddl-auto: update
     open-in-view: false
     properties:
       hibernate:

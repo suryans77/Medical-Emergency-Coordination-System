@@ -12,30 +12,31 @@ public class Ambulance {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    private String name;
-
-    private double latitude;
-    private double longitude;
+    private String registrationNumber;
+    private String capabilities; // e.g., "ALS, Ventilator, Defibrillator"
+    private String crewInfo;     // e.g., "2 Paramedics, 1 Driver"
 
     @Enumerated(EnumType.STRING)
     private AmbulanceStatus status;
 
-    // Required by JPA
+    // Default Constructor for JPA
     public Ambulance() {}
+
+    public Ambulance(String registrationNumber, String capabilities, String crewInfo, AmbulanceStatus status) {
+        this.registrationNumber = registrationNumber;
+        this.capabilities = capabilities;
+        this.crewInfo = crewInfo;
+        this.status = status;
+    }
 
     // Getters and Setters
     public UUID getId() { return id; }
-    public void setId(UUID id) { this.id = id; }
-
-    public String getName() { return name; }
-    public void setName(String name) { this.name = name; }
-
-    public double getLatitude() { return latitude; }
-    public void setLatitude(double latitude) { this.latitude = latitude; }
-
-    public double getLongitude() { return longitude; }
-    public void setLongitude(double longitude) { this.longitude = longitude; }
-
+    public String getRegistrationNumber() { return registrationNumber; }
+    public void setRegistrationNumber(String registrationNumber) { this.registrationNumber = registrationNumber; }
+    public String getCapabilities() { return capabilities; }
+    public void setCapabilities(String capabilities) { this.capabilities = capabilities; }
+    public String getCrewInfo() { return crewInfo; }
+    public void setCrewInfo(String crewInfo) { this.crewInfo = crewInfo; }
     public AmbulanceStatus getStatus() { return status; }
     public void setStatus(AmbulanceStatus status) { this.status = status; }
 }

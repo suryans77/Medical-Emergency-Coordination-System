@@ -1,14 +1,17 @@
 package org.example.ambulance.controller;
 
+import org.example.ambulance.entity.Ambulance;
 import org.example.ambulance.service.AmbulanceService;
-import org.example.shared.dtos.Ambulance;
+import org.example.shared.enums.AmbulanceStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 @RestController
-@RequestMapping("/ambulance")
+@RequestMapping("/ambulances")
 public class AmbulanceController {
 
     private final AmbulanceService service;
@@ -17,16 +20,18 @@ public class AmbulanceController {
         this.service = service;
     }
 
-    @GetMapping("/available")
-    public ResponseEntity<Ambulance> getFirstAvailable() {
-        return service.getAvailableAmbulance()
-                .map(amb -> new Ambulance(
-                        amb.getId(),
-                        amb.getLatitude(),
-                        amb.getLongitude(),
-                        amb.getStatus()
-                ))
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+    @GetMapping
+    public ResponseEntity<List<Ambulance>> getAmbulances(@RequestParam(required = false) AmbulanceStatus status) {
+        if (status != null) {
+            return ResponseEntity.ok(service.getByStatus(status));
+        }
+        return ResponseEntity.ok(service.getByStatus(null));
+    }
+
+    @PatchMapping("/{id}/status")
+    public ResponseEntity<Void> updateStatus(@PathVariable UUID id, @RequestBody Map<String, String> body) {
+        AmbulanceStatus newStatus = AmbulanceStatus.valueOf(body.get("status").toUpperCase());
+        service.updateStatus(id, newStatus);
+        return ResponseEntity.ok().build();
     }
 }
