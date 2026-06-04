@@ -19,6 +19,9 @@ public class AmbulanceService {
     }
 
     public List<Ambulance> getByStatus(AmbulanceStatus status) {
+        if (status == null) {
+            return repository.findAll();
+        }
         return repository.findByStatus(status);
     }
 

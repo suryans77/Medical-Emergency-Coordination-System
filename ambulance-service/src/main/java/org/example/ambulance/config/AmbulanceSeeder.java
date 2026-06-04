@@ -21,7 +21,7 @@ public class AmbulanceSeeder {
             repository.save(new Ambulance("DL-1AB-1234", "Advanced Life Support (ALS)", "2 Paramedics", AmbulanceStatus.AVAILABLE));
             repository.save(new Ambulance("DL-2CD-5678", "Basic Life Support (BLS)", "1 Paramedic", AmbulanceStatus.AVAILABLE));
             repository.save(new Ambulance("DL-3EF-9012", "Mobile ICU, Ventilator", "1 Doctor, 2 Paramedics", AmbulanceStatus.AVAILABLE));
-            System.out.println("✅ Seeded 3 Ambulances with Vehicle & Crew Data.");
+            System.out.println("Seeded 3 ambulances with vehicle and crew data.");
         }
     }
 }

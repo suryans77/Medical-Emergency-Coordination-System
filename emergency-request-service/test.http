@@ -8,3 +8,26 @@ Content-Type: application/json
   "latitude": 20.29,
   "longitude": 85.81
 }
+
+### Get all available ambulances
+GET http://localhost:8083/ambulances?status=AVAILABLE
+Accept: application/json
+
+### Reserve an ambulance
+PATCH http://localhost:8083/ambulances/<PASTE-UUID-HERE>/status
+Content-Type: application/json
+
+{
+  "status": "RESERVED"
+}
+
+### Get available hospitals
+GET http://localhost:8086/hospitals?minBeds=1
+Accept: application/json
+
+### Reserve a bed (Replace UUID with AIIMS from the GET request)
+PATCH http://localhost:8086/hospitals/8809c91b-ec22-4a8e-8ae1-03bc93385de1/reserve-bed
+
+### Get live ambulance coordinates
+GET http://localhost:8085/locations
+Accept: application/json

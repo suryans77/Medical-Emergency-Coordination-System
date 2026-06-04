@@ -9,31 +9,20 @@ spring:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
       timeout: 2s
-  datasource:
-    url: jdbc:postgresql://${LOCATION_DB_HOST:localhost}:${LOCATION_DB_PORT:5438}/${LOCATION_DB_NAME:location_service}
-    username: ${LOCATION_DB_USERNAME:medical}
-    password: ${LOCATION_DB_PASSWORD:medical}
-  flyway:
-    enabled: true
-    locations: classpath:db/migration
-  jpa:
-    hibernate:
-      ddl-auto: none
-    open-in-view: false
-    properties:
-      hibernate:
-        jdbc:
-          time_zone: UTC
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:29092}
     consumer:
       auto-offset-reset: earliest
       group-id: ${spring.application.name}
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
       properties:
         spring.json.trusted.packages: org.example.*
     producer:
       acks: all
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
       retries: 10
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
       properties:
         enable.idempotence: true
 
@@ -74,3 +63,7 @@ medical:
     jwt:
       issuer: ${JWT_ISSUER:medical-emergency-coordination-system}
       jwk-set-uri: ${JWT_JWK_SET_URI:http://localhost:8080/.well-known/jwks.json}
+
+ambulance:
+  service:
+    url: ${AMBULANCE_SERVICE_URL:http://localhost:8083}

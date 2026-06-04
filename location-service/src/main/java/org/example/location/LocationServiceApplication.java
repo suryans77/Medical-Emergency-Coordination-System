@@ -1,15 +1,17 @@
-package org.example.matching;
+package org.example.location;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
+import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.web.client.RestTemplate;
 
 @SpringBootApplication
-public class MatchingServiceApplication {
+@EnableScheduling
+public class LocationServiceApplication {
 
     public static void main(String[] args) {
-        SpringApplication.run(MatchingServiceApplication.class, args);
+        SpringApplication.run(LocationServiceApplication.class, args);
     }
 
     @Bean
@@ -17,3 +19,4 @@ public class MatchingServiceApplication {
         return new RestTemplate();
     }
 }
+

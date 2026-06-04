@@ -3,9 +3,9 @@ package org.example.matching.producer;
 import org.example.shared.config.KafkaTopics;
 import org.example.shared.events.DispatchAssigned;
 import org.springframework.kafka.core.KafkaTemplate;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
-@Component
+@Service
 public class DispatchProducer {
 
     private final KafkaTemplate<String, Object> kafkaTemplate;
@@ -15,7 +15,8 @@ public class DispatchProducer {
     }
 
     public void publishDispatch(DispatchAssigned event) {
-        kafkaTemplate.send(KafkaTopics.DISPATCH_EVENTS, event);
-        System.out.println("Published DispatchAssignedEvent for Emergency: " + event.emergencyId() + " to Ambulance: " + event.ambulanceId());
+        // Broadcasts to the dispatch topic, using the emergency ID as the key
+        kafkaTemplate.send(KafkaTopics.DISPATCH_EVENTS, event.emergencyId().toString(), event);
+        System.out.println("🚀 DISPATCH PUBLISHED for Emergency: " + event.emergencyId());
     }
 }
