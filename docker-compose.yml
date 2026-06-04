@@ -73,6 +73,22 @@ services:
       timeout: 5s
       retries: 10
 
+  case-db:
+    image: postgres:17-alpine
+    ports:
+      - "5439:5432"
+    environment:
+      POSTGRES_DB: case_db
+      POSTGRES_USER: medical
+      POSTGRES_PASSWORD: medical
+    volumes:
+      - case-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U medical -d case_db" ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
   redis:
     image: redis:7-alpine
     ports:
@@ -87,3 +103,4 @@ volumes:
   emergency-db-data:
   ambulance-db-data:
   hospital-db-data:
+  case-db-data:

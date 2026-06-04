@@ -29,5 +29,6 @@ Accept: application/json
 PATCH http://localhost:8086/hospitals/8809c91b-ec22-4a8e-8ae1-03bc93385de1/reserve-bed
 
 ### Get live ambulance coordinates
-GET http://localhost:8085/locations
+GET http://localhost:8084/locations
 Accept: application/json
+

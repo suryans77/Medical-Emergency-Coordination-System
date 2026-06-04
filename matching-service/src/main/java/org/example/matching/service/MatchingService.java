@@ -3,6 +3,7 @@ package org.example.matching.service;
 import org.example.matching.producer.DispatchProducer;
 import org.example.shared.enums.AmbulanceStatus;
 import org.example.shared.events.DispatchAssigned;
+import org.example.shared.events.HospitalAssigned;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpMethod;
@@ -35,102 +36,177 @@ public class MatchingService {
 
     public void processEmergency(UUID emergencyId, double emergencyLat, double emergencyLon) {
         try {
-            System.out.println("🔍 Finding resources for Emergency: " + emergencyId);
+            System.out.println("Finding resources for Emergency: " + emergencyId);
 
-            // 1. Get Available Ambulances
             List<Map<String, Object>> ambulances = restTemplate.exchange(
                     ambulanceUrl + "/ambulances?status=" + AmbulanceStatus.AVAILABLE,
                     HttpMethod.GET, null, new ParameterizedTypeReference<List<Map<String, Object>>>() {}
             ).getBody();
 
-            // 2. Get Live Locations from Redis
             List<Map<String, Object>> locations = restTemplate.exchange(
                     locationUrl + "/locations",
                     HttpMethod.GET, null, new ParameterizedTypeReference<List<Map<String, Object>>>() {}
             ).getBody();
 
-            // 3. Find Closest Ambulance
             UUID bestAmbulanceId = findClosestAmbulance(emergencyLat, emergencyLon, ambulances, locations);
-            if (bestAmbulanceId == null) throw new RuntimeException("No ambulances available!");
+            if (bestAmbulanceId == null) {
+                throw new RuntimeException("No ambulances available!");
+            }
 
-            // 4. Reserve the Ambulance
-            restTemplate.patchForObject(ambulanceUrl + "/ambulances/" + bestAmbulanceId + "/status",
-                    Map.of("status", "RESERVED"), Void.class);
-            System.out.println("✅ Reserved Ambulance: " + bestAmbulanceId);
+            restTemplate.patchForObject(
+                    ambulanceUrl + "/ambulances/" + bestAmbulanceId + "/status",
+                    Map.of("status", AmbulanceStatus.RESERVED.name()),
+                    Void.class
+            );
+            System.out.println("Reserved Ambulance: " + bestAmbulanceId);
 
-            // 5. Get Available Hospitals
             List<Map<String, Object>> hospitals = restTemplate.exchange(
                     hospitalUrl + "/hospitals?minBeds=1",
                     HttpMethod.GET, null, new ParameterizedTypeReference<List<Map<String, Object>>>() {}
             ).getBody();
 
-            // 6. Find Closest Hospital
             UUID bestHospitalId = findClosestHospital(emergencyLat, emergencyLon, hospitals);
-            if (bestHospitalId == null) throw new RuntimeException("No hospitals available!");
+            if (bestHospitalId == null) {
+                throw new RuntimeException("No hospitals available!");
+            }
 
-            // 7. Reserve the Hospital Bed
-            restTemplate.patchForObject(hospitalUrl + "/hospitals/" + bestHospitalId + "/reserve-bed",
-                    null, String.class);
-            System.out.println("✅ Reserved Bed at Hospital: " + bestHospitalId);
+            restTemplate.patchForObject(
+                    hospitalUrl + "/hospitals/" + bestHospitalId + "/reserve-bed",
+                    null,
+                    String.class
+            );
+            System.out.println("Reserved Bed at Hospital: " + bestHospitalId);
 
-            // 8. Publish the fully-loaded Phase 2 Event
-            DispatchAssigned dispatch = new DispatchAssigned(emergencyId, bestAmbulanceId, bestHospitalId);
+            HospitalAssigned hospitalEvent =
+                    new HospitalAssigned(emergencyId, bestHospitalId, findHospitalName(bestHospitalId, hospitals));
+            producer.publishHospitalAssigned(hospitalEvent);
+
+            DispatchAssigned dispatch =
+                    new DispatchAssigned(emergencyId, bestAmbulanceId, bestHospitalId);
             producer.publishDispatch(dispatch);
 
         } catch (Exception e) {
-            System.err.println("❌ Match failed for Emergency " + emergencyId + ": " + e.getMessage());
+            System.err.println("Match failed for Emergency " + emergencyId + ": " + e.getMessage());
         }
     }
 
-    // --- Geolocation Math Helpers ---
+    private UUID findClosestAmbulance(
+            double emergencyLat,
+            double emergencyLon,
+            List<Map<String, Object>> ambulances,
+            List<Map<String, Object>> locations
+    ) {
+        if (ambulances == null || locations == null) {
+            return null;
+        }
 
-    private UUID findClosestAmbulance(double eLat, double eLon, List<Map<String, Object>> ambulances, List<Map<String, Object>> locations) {
         UUID closestId = null;
         double minDistance = Double.MAX_VALUE;
 
-        for (Map<String, Object> amb : ambulances) {
-            UUID id = UUID.fromString((String) amb.get("id"));
+        for (Map<String, Object> ambulance : ambulances) {
+            UUID id = readUuid(ambulance, "ambulanceId", "id");
+            if (id == null) {
+                continue;
+            }
 
-            // Find this ambulance's coordinates in the location list
-            Map<String, Object> loc = locations.stream()
-                    .filter(l -> UUID.fromString((String) l.get("ambulanceId")).equals(id))
-                    .findFirst().orElse(null);
+            Map<String, Object> location = locations.stream()
+                    .filter(item -> id.equals(readUuid(item, "ambulanceId", "id")))
+                    .findFirst()
+                    .orElse(null);
 
-            if (loc != null) {
-                double dist = calculateDistance(eLat, eLon, (Double) loc.get("latitude"), (Double) loc.get("longitude"));
-                if (dist < minDistance) {
-                    minDistance = dist;
+            if (location != null) {
+                double distance = calculateDistance(
+                        emergencyLat,
+                        emergencyLon,
+                        readDouble(location, "latitude"),
+                        readDouble(location, "longitude")
+                );
+                if (distance < minDistance) {
+                    minDistance = distance;
                     closestId = id;
                 }
             }
         }
+
         return closestId;
     }
 
-    private UUID findClosestHospital(double eLat, double eLon, List<Map<String, Object>> hospitals) {
+    private UUID findClosestHospital(double emergencyLat, double emergencyLon, List<Map<String, Object>> hospitals) {
+        if (hospitals == null) {
+            return null;
+        }
+
         UUID closestId = null;
         double minDistance = Double.MAX_VALUE;
 
-        for (Map<String, Object> hosp : hospitals) {
-            UUID id = UUID.fromString((String) hosp.get("id"));
-            double dist = calculateDistance(eLat, eLon, (Double) hosp.get("latitude"), (Double) hosp.get("longitude"));
-            if (dist < minDistance) {
-                minDistance = dist;
+        for (Map<String, Object> hospital : hospitals) {
+            UUID id = readUuid(hospital, "hospitalId", "id");
+            if (id == null) {
+                continue;
+            }
+
+            double distance = calculateDistance(
+                    emergencyLat,
+                    emergencyLon,
+                    readDouble(hospital, "latitude"),
+                    readDouble(hospital, "longitude")
+            );
+            if (distance < minDistance) {
+                minDistance = distance;
                 closestId = id;
             }
         }
+
         return closestId;
     }
 
-    // Haversine Formula for distance calculation
+    private String findHospitalName(UUID hospitalId, List<Map<String, Object>> hospitals) {
+        if (hospitals == null) {
+            return "Assigned Hospital";
+        }
+
+        return hospitals.stream()
+                .filter(hospital -> hospitalId.equals(readUuid(hospital, "hospitalId", "id")))
+                .findFirst()
+                .map(hospital -> readString(hospital, "hospitalName", readString(hospital, "name", "Assigned Hospital")))
+                .orElse("Assigned Hospital");
+    }
+
+    private UUID readUuid(Map<String, Object> payload, String primaryKey, String fallbackKey) {
+        Object value = payload.get(primaryKey);
+        if (value == null && fallbackKey != null) {
+            value = payload.get(fallbackKey);
+        }
+        if (value == null) {
+            return null;
+        }
+        if (value instanceof UUID uuid) {
+            return uuid;
+        }
+        return UUID.fromString(String.valueOf(value));
+    }
+
+    private double readDouble(Map<String, Object> payload, String key) {
+        Object value = payload.get(key);
+        if (value instanceof Number number) {
+            return number.doubleValue();
+        }
+        return Double.parseDouble(String.valueOf(value));
+    }
+
+    private String readString(Map<String, Object> payload, String key, String fallback) {
+        Object value = payload.get(key);
+        return value == null ? fallback : String.valueOf(value);
+    }
+
     private double calculateDistance(double lat1, double lon1, double lat2, double lon2) {
-        final int R = 6371; // Radius of earth in km
+        final int earthRadiusKm = 6371;
         double latDistance = Math.toRadians(lat2 - lat1);
         double lonDistance = Math.toRadians(lon2 - lon1);
         double a = Math.sin(latDistance / 2) * Math.sin(latDistance / 2)
                 + Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2))
                 * Math.sin(lonDistance / 2) * Math.sin(lonDistance / 2);
         double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-        return R * c;
+        return earthRadiusKm * c;
     }
 }

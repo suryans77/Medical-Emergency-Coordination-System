@@ -13,7 +13,6 @@ public final class KafkaTopics {
     // Published by Matching Service, consumed by Notification Service
     public static final String DISPATCH_EVENTS = "dispatch-events";
 
-    // --- Phase 2 Infrastructure Topics ---
     // Published by Ambulance Service for status lifecycle changes
     public static final String AMBULANCE_EVENTS = "ambulance-events";
 

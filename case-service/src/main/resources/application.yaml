@@ -5,7 +5,7 @@ spring:
   application:
     name: case-service
   datasource:
-    url: jdbc:postgresql://${CASE_DB_HOST:localhost}:${CASE_DB_PORT:5437}/${CASE_DB_NAME:case_service}
+    url: jdbc:postgresql://${CASE_DB_HOST:localhost}:${CASE_DB_PORT:5439}/${CASE_DB_NAME:case_db}
     username: ${CASE_DB_USERNAME:medical}
     password: ${CASE_DB_PASSWORD:medical}
   flyway:
@@ -13,7 +13,7 @@ spring:
     locations: classpath:db/migration
   jpa:
     hibernate:
-      ddl-auto: none
+      ddl-auto: update
     open-in-view: false
     properties:
       hibernate:
@@ -24,11 +24,15 @@ spring:
     consumer:
       auto-offset-reset: earliest
       group-id: ${spring.application.name}
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
       properties:
         spring.json.trusted.packages: org.example.*
     producer:
       acks: all
       retries: 10
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
       properties:
         enable.idempotence: true
 

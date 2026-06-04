@@ -66,3 +66,8 @@ medical:
     jwt:
       issuer: ${JWT_ISSUER:medical-emergency-coordination-system}
       jwk-set-uri: ${JWT_JWK_SET_URI:http://localhost:8080/.well-known/jwks.json}
+
+services:
+  ambulance-url: http://localhost:8083
+  location-url: http://localhost:8084
+  hospital-url: http://localhost:8086

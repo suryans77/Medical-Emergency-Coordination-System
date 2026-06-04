@@ -6,6 +6,7 @@ import org.example.location.service.LocationService;
 import org.example.shared.enums.AmbulanceStatus;
 import org.example.shared.events.AmbulanceLocationUpdated;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
@@ -19,6 +20,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Component
+@ConditionalOnProperty(name = "location.simulator.enabled", havingValue = "true", matchIfMissing = true)
 public class AmbulanceMovementSimulator {
 
     private final LocationService locationService;
@@ -71,7 +73,7 @@ public class AmbulanceMovementSimulator {
                             savedLocation.getAmbulanceId(),
                             savedLocation.getLatitude(),
                             savedLocation.getLongitude(),
-                            savedLocation.getUpdatedAt()
+                            savedLocation.getUpdatedAt().toString()
                     );
                     producer.publishLocationUpdate(event);
                 } catch (Exception e) {

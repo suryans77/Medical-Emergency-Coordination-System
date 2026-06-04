@@ -13,3 +13,7 @@ management:
 ambulance:
   service:
     url: http://localhost:8083
+
+location:
+  simulator:
+    enabled: false
