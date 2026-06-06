@@ -8,6 +8,7 @@ import org.example.shared.events.EmergencyRequested;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.UUID;
 
 @Service
@@ -33,6 +34,8 @@ public class EmergencyRequestService {
         EmergencyRequest savedEntity = repository.save(entity);
 
         EmergencyRequested event = new EmergencyRequested(
+                UUID.randomUUID(),
+                Instant.now(),
                 savedEntity.getId(),
                 requestDTO.patientId(),
                 requestDTO.severity(),

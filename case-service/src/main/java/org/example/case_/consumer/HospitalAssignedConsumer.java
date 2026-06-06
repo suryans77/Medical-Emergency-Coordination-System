@@ -1,30 +1,64 @@
 package org.example.case_.consumer;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.example.case_.entity.ProcessedEvent;
+import org.example.case_.entity.ProcessedEventId;
+import org.example.case_.repository.ProcessedEventRepository;
 import org.example.case_.service.CaseService;
 import org.example.shared.config.KafkaTopics;
 import org.example.shared.events.HospitalAssigned;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.util.UUID;
+import java.time.Instant;
 
 @Component
 public class HospitalAssignedConsumer {
 
     private final CaseService caseService;
+    private final ProcessedEventRepository processedEventRepository;
+    private final ObjectMapper objectMapper; // <-- NEW: The Translator
 
-    public HospitalAssignedConsumer(CaseService caseService) {
+    // The name of this specific consumer for the composite key
+    private static final String CONSUMER_NAME = "case-service-hospital-consumer";
+
+    public HospitalAssignedConsumer(CaseService caseService,
+                                    ProcessedEventRepository processedEventRepository,
+                                    ObjectMapper objectMapper) { // <-- NEW: Inject it
         this.caseService = caseService;
+        this.processedEventRepository = processedEventRepository;
+        this.objectMapper = objectMapper;
     }
 
     @KafkaListener(topics = KafkaTopics.HOSPITAL_EVENTS, groupId = "case-service-group")
-    public void consumeHospital(HospitalAssigned event) {
+    @Transactional // Guarantees the DB save and the business logic happen atomically
+    public void consumeHospital(String jsonPayload) { // <-- NEW: Catch the raw String
+
         try {
-            UUID emergencyId = event.emergencyId();
-            System.out.println("🏥 Case Service received HospitalAssigned for " + emergencyId);
-            caseService.onHospitalAssigned(event);
+            // NEW: Translate the JSON string back into your Java record
+            HospitalAssigned event = objectMapper.readValue(jsonPayload, HospitalAssigned.class);
+
+            // Extract the unique event ID
+            String eventIdString = event.eventId().toString();
+            ProcessedEventId id = new ProcessedEventId(eventIdString, CONSUMER_NAME);
+
+            // 1. THE BOUNCER: Check if this consumer has already seen this specific event
+            if (processedEventRepository.existsById(id)) {
+                System.out.println("⚠️ Duplicate event detected! Skipping HospitalAssignedEvent: " + eventIdString);
+                return;
+            }
+
+            // 2. THE BUSINESS LOGIC: Process the hospital assignment
+            System.out.println("🏥 Case Service received new HospitalAssigned for " + event.emergencyId());
+            caseService.onHospitalAssigned(event); // Kept your exact method call!
+
+            // 3. THE RECEIPT: Save to DB so we never process it again
+            processedEventRepository.save(new ProcessedEvent(eventIdString, CONSUMER_NAME, Instant.now()));
+
         } catch (Exception e) {
-            System.err.println("Failed to parse Hospital event: " + e.getMessage());
+            System.err.println("⚠️ Failed to process hospital assignment: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 }

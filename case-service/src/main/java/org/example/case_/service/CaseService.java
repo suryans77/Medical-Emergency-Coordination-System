@@ -53,6 +53,8 @@ public class CaseService {
             EmergencyCase savedCase = repository.save(emergencyCase);
 
             CaseCreated caseCreated = new CaseCreated(
+                    UUID.randomUUID(),
+                    Instant.now(),
                     savedCase.getCaseId(), emergencyId, dispatch.ambulanceId(), hospital.hospitalId(), hospital.hospitalName(), CaseStatus.ASSIGNED
             );
             producer.publishCaseCreated(caseCreated);

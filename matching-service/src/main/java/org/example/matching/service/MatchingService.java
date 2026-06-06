@@ -8,13 +8,16 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
 @Service
+@Transactional
 public class MatchingService {
 
     private final RestTemplate restTemplate;
@@ -78,11 +81,13 @@ public class MatchingService {
             System.out.println("Reserved Bed at Hospital: " + bestHospitalId);
 
             HospitalAssigned hospitalEvent =
-                    new HospitalAssigned(emergencyId, bestHospitalId, findHospitalName(bestHospitalId, hospitals));
+                    new HospitalAssigned(UUID.randomUUID(),
+                            Instant.now(), emergencyId, bestHospitalId, findHospitalName(bestHospitalId, hospitals));
             producer.publishHospitalAssigned(hospitalEvent);
 
             DispatchAssigned dispatch =
-                    new DispatchAssigned(emergencyId, bestAmbulanceId, bestHospitalId);
+                    new DispatchAssigned(UUID.randomUUID(),
+                            Instant.now(), emergencyId, bestAmbulanceId, bestHospitalId);
             producer.publishDispatch(dispatch);
 
         } catch (Exception e) {

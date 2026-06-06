@@ -1,26 +1,54 @@
 package org.example.matching.consumer;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.example.matching.entity.ProcessedEvent;
+import org.example.matching.entity.ProcessedEventId;
+import org.example.matching.repository.ProcessedEventRepository;
 import org.example.matching.service.MatchingService;
 import org.example.shared.config.KafkaTopics;
 import org.example.shared.events.EmergencyRequested;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Map;
+import java.time.Instant;
 import java.util.UUID;
 
 @Component
 public class EmergencyConsumer {
 
     private final MatchingService matchingService;
+    private final ProcessedEventRepository processedEventRepository;
+    private final ObjectMapper objectMapper; // <-- NEW: Bring in the translator
 
-    public EmergencyConsumer(MatchingService matchingService) {
+    private static final String CONSUMER_NAME = "matching-service-emergency-consumer";
+
+    public EmergencyConsumer(MatchingService matchingService,
+                             ProcessedEventRepository processedEventRepository,
+                             ObjectMapper objectMapper) { // <-- NEW
         this.matchingService = matchingService;
+        this.processedEventRepository = processedEventRepository;
+        this.objectMapper = objectMapper;
     }
 
     @KafkaListener(topics = KafkaTopics.EMERGENCY_EVENTS, groupId = "matching-service-group")
-    public void onEmergencyRequested(EmergencyRequested event) {
+    @Transactional
+    public void onEmergencyRequested(String jsonPayload) { // <-- CHANGED: Catch a String
         try {
+            // 1. TRANSLATE: Convert the JSON text back into your Java Record
+            EmergencyRequested event = objectMapper.readValue(jsonPayload, EmergencyRequested.class);
+
+            // 2. Extract the unique event ID
+            String eventIdString = event.eventId().toString();
+            ProcessedEventId id = new ProcessedEventId(eventIdString, CONSUMER_NAME);
+
+            // 3. THE BOUNCER
+            if (processedEventRepository.existsById(id)) {
+                System.out.println("⚠️ Duplicate emergency request detected! Skipping: " + eventIdString);
+                return;
+            }
+
+            // 4. BUSINESS LOGIC
             System.out.println("🚨 Received new emergency request!");
             UUID emergencyId = event.emergencyId();
             double latitude = event.latitude();
@@ -28,8 +56,12 @@ public class EmergencyConsumer {
 
             matchingService.processEmergency(emergencyId, latitude, longitude);
 
+            // 5. THE RECEIPT
+            processedEventRepository.save(new ProcessedEvent(eventIdString, CONSUMER_NAME, Instant.now()));
+
         } catch (Exception e) {
-            System.err.println("⚠️ Failed to parse incoming emergency event: " + e.getMessage());
+            System.err.println("⚠️ Failed to process incoming emergency event: " + e.getMessage());
+            e.printStackTrace(); // Helpful to see the exact error if the JSON is malformed
         }
     }
 }

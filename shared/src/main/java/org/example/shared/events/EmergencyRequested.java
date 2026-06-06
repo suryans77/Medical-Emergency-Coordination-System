@@ -2,9 +2,12 @@ package org.example.shared.events;
 
 import org.example.shared.enums.Severity;
 
+import java.time.Instant;
 import java.util.UUID;
 
 public record EmergencyRequested(
+        UUID eventId,
+        Instant createdAt,
         UUID emergencyId,
         String patientId,
         Severity severity,
