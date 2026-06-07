@@ -1,15 +1,15 @@
 package org.example.matching.service;
 
+import org.example.matching.client.ResourceClient;
+import org.example.matching.entity.DispatchSaga;
+import org.example.shared.enums.SagaState;
 import org.example.matching.producer.DispatchProducer;
+import org.example.matching.repository.SagaRepository;
 import org.example.shared.enums.AmbulanceStatus;
 import org.example.shared.events.DispatchAssigned;
 import org.example.shared.events.HospitalAssigned;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.client.RestTemplate;
 
 import java.time.Instant;
 import java.util.List;
@@ -20,65 +20,54 @@ import java.util.UUID;
 @Transactional
 public class MatchingService {
 
-    private final RestTemplate restTemplate;
+    private final ResourceClient resourceClient;
     private final DispatchProducer producer;
+    private final SagaRepository sagaRepository;
 
-    @Value("${services.ambulance-url}")
-    private String ambulanceUrl;
-
-    @Value("${services.location-url}")
-    private String locationUrl;
-
-    @Value("${services.hospital-url}")
-    private String hospitalUrl;
-
-    public MatchingService(RestTemplate restTemplate, DispatchProducer producer) {
-        this.restTemplate = restTemplate;
+    public MatchingService(ResourceClient resourceClient, DispatchProducer producer, SagaRepository sagaRepository) {
+        this.resourceClient = resourceClient;
         this.producer = producer;
+        this.sagaRepository = sagaRepository;
     }
 
     public void processEmergency(UUID emergencyId, double emergencyLat, double emergencyLon) {
+        // Initialize the saga save-point in the database
+        DispatchSaga saga = new DispatchSaga(emergencyId.toString());
+        saga = sagaRepository.save(saga);
+
         try {
             System.out.println("Finding resources for Emergency: " + emergencyId);
 
-            List<Map<String, Object>> ambulances = restTemplate.exchange(
-                    ambulanceUrl + "/ambulances?status=" + AmbulanceStatus.AVAILABLE,
-                    HttpMethod.GET, null, new ParameterizedTypeReference<List<Map<String, Object>>>() {}
-            ).getBody();
-
-            List<Map<String, Object>> locations = restTemplate.exchange(
-                    locationUrl + "/locations",
-                    HttpMethod.GET, null, new ParameterizedTypeReference<List<Map<String, Object>>>() {}
-            ).getBody();
+            List<Map<String, Object>> ambulances = resourceClient.fetchAvailableAmbulances(AmbulanceStatus.AVAILABLE.name());
+            List<Map<String, Object>> locations = resourceClient.fetchLocations();
 
             UUID bestAmbulanceId = findClosestAmbulance(emergencyLat, emergencyLon, ambulances, locations);
             if (bestAmbulanceId == null) {
                 throw new RuntimeException("No ambulances available!");
             }
 
-            restTemplate.patchForObject(
-                    ambulanceUrl + "/ambulances/" + bestAmbulanceId + "/status",
-                    Map.of("status", AmbulanceStatus.RESERVED.name()),
-                    Void.class
-            );
+            resourceClient.reserveAmbulance(bestAmbulanceId, AmbulanceStatus.RESERVED.name());
             System.out.println("Reserved Ambulance: " + bestAmbulanceId);
 
-            List<Map<String, Object>> hospitals = restTemplate.exchange(
-                    hospitalUrl + "/hospitals?minBeds=1",
-                    HttpMethod.GET, null, new ParameterizedTypeReference<List<Map<String, Object>>>() {}
-            ).getBody();
+            // Update saga state
+            saga.setAmbulanceId(bestAmbulanceId.toString());
+            saga.setState(SagaState.AMBULANCE_RESERVED);
+            sagaRepository.save(saga);
+
+            List<Map<String, Object>> hospitals = resourceClient.fetchHospitals(1);
 
             UUID bestHospitalId = findClosestHospital(emergencyLat, emergencyLon, hospitals);
             if (bestHospitalId == null) {
                 throw new RuntimeException("No hospitals available!");
             }
 
-            restTemplate.patchForObject(
-                    hospitalUrl + "/hospitals/" + bestHospitalId + "/reserve-bed",
-                    null,
-                    String.class
-            );
+            resourceClient.reserveHospitalBed(bestHospitalId);
             System.out.println("Reserved Bed at Hospital: " + bestHospitalId);
+
+            // Update saga state
+            saga.setHospitalId(bestHospitalId.toString());
+            saga.setState(SagaState.HOSPITAL_RESERVED);
+            sagaRepository.save(saga);
 
             HospitalAssigned hospitalEvent =
                     new HospitalAssigned(UUID.randomUUID(),
@@ -90,9 +79,33 @@ public class MatchingService {
                             Instant.now(), emergencyId, bestAmbulanceId, bestHospitalId);
             producer.publishDispatch(dispatch);
 
+            // Finalize saga state
+            saga.setState(SagaState.COMPLETED);
+            sagaRepository.save(saga);
+
         } catch (Exception e) {
             System.err.println("Match failed for Emergency " + emergencyId + ": " + e.getMessage());
+
+            // The Saga Rollback Logic
+            if (saga.getState() == SagaState.AMBULANCE_RESERVED) {
+                compensateAmbulance(saga);
+            } else {
+                saga.setState(SagaState.FAILED);
+                sagaRepository.save(saga);
+            }
         }
+    }
+
+    private void compensateAmbulance(DispatchSaga saga) {
+        try {
+            resourceClient.releaseAmbulance(UUID.fromString(saga.getAmbulanceId()));
+            System.out.println("⏪ ROLLBACK: Ambulance " + saga.getAmbulanceId() + " safely released.");
+            saga.setState(SagaState.COMPENSATED);
+        } catch (Exception ex) {
+            System.err.println("CRITICAL: Failed to release ambulance during saga compensation!");
+            saga.setState(SagaState.FAILED);
+        }
+        sagaRepository.save(saga);
     }
 
     private UUID findClosestAmbulance(
@@ -151,6 +164,7 @@ public class MatchingService {
             }
 
             double distance = calculateDistance(
+                    // Keeping your exact calculations intact
                     emergencyLat,
                     emergencyLon,
                     readDouble(hospital, "latitude"),

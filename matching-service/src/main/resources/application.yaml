@@ -4,6 +4,16 @@ server:
 spring:
   application:
     name: matching-service
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:5437/matching_db
+    username: ${DB_USER:medical}
+    password: ${DB_PASSWORD:medical}
+    driver-class-name: org.postgresql.Driver
+    jpa:
+      database-platform: org.hibernate.dialect.PostgreSQLDialect
+      hibernate:
+        ddl-auto: update
+      show-sql: true
   data:
     redis:
       host: ${REDIS_HOST:localhost}
