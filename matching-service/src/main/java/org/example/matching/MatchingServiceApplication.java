@@ -9,9 +9,11 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.scheduling.annotation.EnableScheduling;
+import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
 @SpringBootApplication
 @EnableScheduling
+@EnableJpaRepositories(basePackages = "org.example.matching.repository")
 public class MatchingServiceApplication {
 
     public static void main(String[] args) {

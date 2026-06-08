@@ -6,7 +6,7 @@ import org.example.matching.entity.ProcessedEventId;
 import org.example.matching.repository.ProcessedEventRepository;
 import org.example.matching.service.MatchingService;
 import org.example.shared.config.KafkaTopics;
-import org.example.shared.events.EmergencyRequested;
+import org.example.shared.events.EmergencyRequestedEvent;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,16 +33,15 @@ public class EmergencyConsumer {
 
     @KafkaListener(topics = KafkaTopics.EMERGENCY_EVENTS, groupId = "matching-service-group")
     @Transactional
-    public void onEmergencyRequested(String jsonPayload) { // <-- CHANGED: Catch a String
+    public void onEmergencyRequested(String jsonPayload) {
         try {
             // 1. TRANSLATE: Convert the JSON text back into your Java Record
-            EmergencyRequested event = objectMapper.readValue(jsonPayload, EmergencyRequested.class);
+            EmergencyRequestedEvent event = objectMapper.readValue(jsonPayload, EmergencyRequestedEvent.class);
 
             // 2. Extract the unique event ID
             String eventIdString = event.eventId().toString();
             ProcessedEventId id = new ProcessedEventId(eventIdString, CONSUMER_NAME);
 
-            // 3. THE BOUNCER
             if (processedEventRepository.existsById(id)) {
                 System.out.println("⚠️ Duplicate emergency request detected! Skipping: " + eventIdString);
                 return;

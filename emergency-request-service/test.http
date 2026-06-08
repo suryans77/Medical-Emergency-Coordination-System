@@ -1,5 +1,38 @@
-### Send an Emergency Request
-POST http://localhost:8082/emergency
+### ============================================================================
+### E2E SYSTEM TEST SUITE
+### Update these 3 variables ONLY AFTER running Step 2
+### ============================================================================
+@ambulanceId = paste-ambulance-uuid-here
+@emergencyId = paste-emergency-uuid-here
+@hospitalId = paste-hospital-uuid-here
+
+@emergencyHost = http://localhost:8082
+@ambulanceHost = http://localhost:8083
+@locationHost = http://localhost:8084
+@hospitalHost = http://localhost:8086
+
+### ============================================================================
+### PHASE 1: PRE-FLIGHT CHECKS (Run these to verify system state before disaster)
+### ============================================================================
+
+### 1A. Check Available Ambulances (Note how many are AVAILABLE)
+GET {{ambulanceHost}}/ambulances
+Accept: application/json
+
+### 1B. Check Available Hospitals (Note the bed count at AIIMS)
+GET {{hospitalHost}}/hospitals?minBeds=1
+Accept: application/json
+
+
+### ============================================================================
+### PHASE 2: THE CATALYST (The Event-Driven Entry Point)
+### ============================================================================
+
+### 2. Create Emergency
+# -> Hits the Emergency Service (8082)
+# -> Publishes to Kafka (emergency-events)
+# -> Matching Service consumes it and triggers the Saga!
+POST {{emergencyHost}}/emergency
 Content-Type: application/json
 
 {
@@ -9,26 +42,22 @@ Content-Type: application/json
   "longitude": 85.81
 }
 
-### Get all available ambulances
-GET http://localhost:8083/ambulances?status=AVAILABLE
+### ============================================================================
+### PHASE 3: PARAMEDIC HANDOFF (Manual field actions)
+### ============================================================================
+
+### 3A. Verify Ambulance is now RESERVED (Automatic from Saga)
+GET {{ambulanceHost}}/ambulances
 Accept: application/json
 
-### Reserve an ambulance
-PATCH http://localhost:8083/ambulances/<PASTE-UUID-HERE>/status
+### 3B. Paramedic Action: Patient Picked Up (Changes to IN_TRANSIT)
+POST {{ambulanceHost}}/ambulances/{{ambulanceId}}/pickup/{{emergencyId}}
 Content-Type: application/json
 
-{
-  "status": "RESERVED"
-}
+### 3C. Paramedic Action: Patient Delivered (Changes to AVAILABLE)
+POST {{ambulanceHost}}/ambulances/{{ambulanceId}}/deliver/{{emergencyId}}/{{hospitalId}}
+Content-Type: application/json
 
-### Get available hospitals
-GET http://localhost:8086/hospitals?minBeds=1
+### 3D. Check Hospital Beds (Verify the bed was actually consumed/updated)
+GET {{hospitalHost}}/hospitals
 Accept: application/json
-
-### Reserve a bed (Replace UUID with AIIMS from the GET request)
-PATCH http://localhost:8086/hospitals/8809c91b-ec22-4a8e-8ae1-03bc93385de1/reserve-bed
-
-### Get live ambulance coordinates
-GET http://localhost:8084/locations
-Accept: application/json
-

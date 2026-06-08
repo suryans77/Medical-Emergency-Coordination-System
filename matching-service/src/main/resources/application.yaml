@@ -5,15 +5,15 @@ spring:
   application:
     name: matching-service
   datasource:
-    url: jdbc:postgresql://${DB_HOST:localhost}:5437/matching_db
-    username: ${DB_USER:medical}
-    password: ${DB_PASSWORD:medical}
+    url: jdbc:postgresql://${MATCHING_HOST:localhost}:${MATCHING_PORT:5437}/${MATCHING_NAME:matching_db}
+    username: ${MATCHING_USERNAME:medical}
+    password: ${MATCHING_PASSWORD:medical}
     driver-class-name: org.postgresql.Driver
-    jpa:
-      database-platform: org.hibernate.dialect.PostgreSQLDialect
-      hibernate:
-        ddl-auto: update
-      show-sql: true
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: update
+    show-sql: false
   data:
     redis:
       host: ${REDIS_HOST:localhost}

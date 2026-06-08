@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.example.emergencyrequest.entity.OutboxEvent;
 import org.example.emergencyrequest.repository.OutboxRepository;
 import org.example.shared.config.KafkaTopics;
-import org.example.shared.events.EmergencyRequested;
+import org.example.shared.events.EmergencyRequestedEvent;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -18,7 +18,7 @@ public class EmergencyRequestProducer {
         this.objectMapper = objectMapper;
     }
 
-    public void publishEvent(EmergencyRequested event) {
+    public void publishEvent(EmergencyRequestedEvent event) {
         try {
             // 1. Translate the Java event to a JSON string
             String jsonPayload = objectMapper.writeValueAsString(event);

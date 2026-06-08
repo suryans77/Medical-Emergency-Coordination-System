@@ -6,7 +6,7 @@ import org.example.case_.entity.ProcessedEventId;
 import org.example.case_.repository.ProcessedEventRepository;
 import org.example.case_.service.CaseService; // Assuming you have this
 import org.example.shared.config.KafkaTopics;
-import org.example.shared.events.DispatchAssigned;
+import org.example.shared.events.DispatchAssignedEvent;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,7 +35,7 @@ public class DispatchAssignedConsumer {
     public void onDispatchAssigned(String jsonPayload) {
         try {
             // 1. Translate string to Java record
-            DispatchAssigned event = objectMapper.readValue(jsonPayload, DispatchAssigned.class);
+            DispatchAssignedEvent event = objectMapper.readValue(jsonPayload, DispatchAssignedEvent.class);
 
             String eventIdString = event.eventId().toString();
             ProcessedEventId id = new ProcessedEventId(eventIdString, CONSUMER_NAME);

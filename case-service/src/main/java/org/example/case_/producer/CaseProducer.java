@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.example.case_.entity.OutboxEvent;
 import org.example.case_.repository.OutboxRepository;
 import org.example.shared.config.KafkaTopics;
-import org.example.shared.events.CaseCreated;
+import org.example.shared.events.CaseCreatedEvent;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -18,7 +18,7 @@ public class CaseProducer {
         this.objectMapper = objectMapper;
     }
 
-    public void publishCaseCreated(CaseCreated event) {
+    public void publishCaseCreated(CaseCreatedEvent event) {
         try {
             // 1. Serialize the event to a JSON string
             String jsonPayload = objectMapper.writeValueAsString(event);

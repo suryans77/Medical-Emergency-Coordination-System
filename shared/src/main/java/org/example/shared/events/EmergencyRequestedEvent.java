@@ -5,7 +5,7 @@ import org.example.shared.enums.Severity;
 import java.time.Instant;
 import java.util.UUID;
 
-public record EmergencyRequested(
+public record EmergencyRequestedEvent(
         UUID eventId,
         Instant createdAt,
         UUID emergencyId,

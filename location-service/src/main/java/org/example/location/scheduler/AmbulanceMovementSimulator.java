@@ -4,7 +4,7 @@ import org.example.location.entity.AmbulanceLocation;
 import org.example.location.producer.LocationProducer;
 import org.example.location.service.LocationService;
 import org.example.shared.enums.AmbulanceStatus;
-import org.example.shared.events.AmbulanceLocationUpdated;
+import org.example.shared.events.AmbulanceLocationUpdatedEvent;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.core.ParameterizedTypeReference;
@@ -67,15 +67,8 @@ public class AmbulanceMovementSimulator {
                     double newLon = coords[1] + ((Math.random() - 0.5) * 0.004);
                     locationCache.put(id, new double[]{newLat, newLon});
 
-                    AmbulanceLocation savedLocation = locationService.updateLocation(id, newLat, newLon);
+                    locationService.updateLocation(id, newLat, newLon);
 
-                    AmbulanceLocationUpdated event = new AmbulanceLocationUpdated(
-                            savedLocation.getAmbulanceId(),
-                            savedLocation.getLatitude(),
-                            savedLocation.getLongitude(),
-                            savedLocation.getUpdatedAt().toString()
-                    );
-                    producer.publishLocationUpdate(event);
                 } catch (Exception e) {
                     System.err.println("Failed to simulate location for ambulance " + amb.get("id") + ": " + e.getMessage());
                 }

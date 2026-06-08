@@ -6,7 +6,7 @@ import org.example.case_.entity.ProcessedEventId;
 import org.example.case_.repository.ProcessedEventRepository;
 import org.example.case_.service.CaseService;
 import org.example.shared.config.KafkaTopics;
-import org.example.shared.events.HospitalAssigned;
+import org.example.shared.events.HospitalAssignedEvent;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -37,7 +37,7 @@ public class HospitalAssignedConsumer {
 
         try {
             // NEW: Translate the JSON string back into your Java record
-            HospitalAssigned event = objectMapper.readValue(jsonPayload, HospitalAssigned.class);
+            HospitalAssignedEvent event = objectMapper.readValue(jsonPayload, HospitalAssignedEvent.class);
 
             // Extract the unique event ID
             String eventIdString = event.eventId().toString();

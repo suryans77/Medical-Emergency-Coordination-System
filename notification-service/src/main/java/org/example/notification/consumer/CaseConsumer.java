@@ -6,7 +6,7 @@ import org.example.notification.entity.ProcessedEventId;
 import org.example.notification.repository.ProcessedEventRepository;
 import org.example.notification.service.NotificationService;
 import org.example.shared.config.KafkaTopics;
-import org.example.shared.events.CaseCreated;
+import org.example.shared.events.CaseCreatedEvent;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,7 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 
 @Component
-public class DispatchConsumer {
+public class CaseConsumer {
 
     private final NotificationService notificationService;
     private final ProcessedEventRepository processedEventRepository;
@@ -22,9 +22,9 @@ public class DispatchConsumer {
 
     private static final String CONSUMER_NAME = "notification-service-case-consumer";
 
-    public DispatchConsumer(NotificationService notificationService,
-                            ProcessedEventRepository processedEventRepository,
-                            ObjectMapper objectMapper) {
+    public CaseConsumer(NotificationService notificationService,
+                        ProcessedEventRepository processedEventRepository,
+                        ObjectMapper objectMapper) {
         this.notificationService = notificationService;
         this.processedEventRepository = processedEventRepository;
         this.objectMapper = objectMapper;
@@ -35,7 +35,7 @@ public class DispatchConsumer {
     public void onCaseCreated(String jsonPayload) {
         try {
             // 3. Translate string to Java record
-            CaseCreated event = objectMapper.readValue(jsonPayload, CaseCreated.class);
+            CaseCreatedEvent event = objectMapper.readValue(jsonPayload, CaseCreatedEvent.class);
 
             String eventIdString = event.eventId().toString();
             ProcessedEventId id = new ProcessedEventId(eventIdString, CONSUMER_NAME);

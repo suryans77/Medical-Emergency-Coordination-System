@@ -4,8 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.example.matching.entity.OutboxEvent;
 import org.example.matching.repository.OutboxRepository;
 import org.example.shared.config.KafkaTopics;
-import org.example.shared.events.DispatchAssigned;
-import org.example.shared.events.HospitalAssigned;
+import org.example.shared.events.DispatchAssignedEvent;
+import org.example.shared.events.HospitalAssignedEvent;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -19,7 +19,7 @@ public class DispatchProducer {
         this.objectMapper = objectMapper;
     }
 
-    public void publishDispatch(DispatchAssigned event) {
+    public void publishDispatch(DispatchAssignedEvent event) {
         try {
             // 1. Convert the Java record into a JSON string
             String jsonPayload = objectMapper.writeValueAsString(event);
@@ -40,7 +40,7 @@ public class DispatchProducer {
         }
     }
 
-    public void publishHospitalAssigned(HospitalAssigned event) {
+    public void publishHospitalAssigned(HospitalAssignedEvent event) {
         try {
             String jsonPayload = objectMapper.writeValueAsString(event);
 

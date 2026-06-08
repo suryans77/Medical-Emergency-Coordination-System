@@ -6,8 +6,8 @@ import org.example.shared.enums.SagaState;
 import org.example.matching.producer.DispatchProducer;
 import org.example.matching.repository.SagaRepository;
 import org.example.shared.enums.AmbulanceStatus;
-import org.example.shared.events.DispatchAssigned;
-import org.example.shared.events.HospitalAssigned;
+import org.example.shared.events.DispatchAssignedEvent;
+import org.example.shared.events.HospitalAssignedEvent;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -41,13 +41,33 @@ public class MatchingService {
             List<Map<String, Object>> ambulances = resourceClient.fetchAvailableAmbulances(AmbulanceStatus.AVAILABLE.name());
             List<Map<String, Object>> locations = resourceClient.fetchLocations();
 
-            UUID bestAmbulanceId = findClosestAmbulance(emergencyLat, emergencyLon, ambulances, locations);
-            if (bestAmbulanceId == null) {
-                throw new RuntimeException("No ambulances available!");
-            }
+            // ------------------------------------------------------------------
+            //  THE RETRY LOOP FOR OPTIMISTIC LOCKING ON AMBULANCE RESERVATION
+            // ------------------------------------------------------------------
+            UUID bestAmbulanceId = null;
+            boolean isReserved = false;
 
-            resourceClient.reserveAmbulance(bestAmbulanceId, AmbulanceStatus.RESERVED.name());
-            System.out.println("Reserved Ambulance: " + bestAmbulanceId);
+            while (!isReserved) {
+                bestAmbulanceId = findClosestAmbulance(emergencyLat, emergencyLon, ambulances, locations);
+
+                if (bestAmbulanceId == null) {
+                    throw new RuntimeException("No available ambulances remaining");
+                }
+
+                try {
+                    // Try to lock it. If Optimistic Lock fails, this throws an HTTP Exception.
+                    resourceClient.reserveAmbulance(bestAmbulanceId, AmbulanceStatus.RESERVED.name());
+                    isReserved = true;
+                    System.out.println("Reserved Ambulance: " + bestAmbulanceId);
+                } catch (Exception e) {
+                    System.out.println("⚠️ Ambulance " + bestAmbulanceId + " was claimed by another request! Recalculating...");
+
+                    // Remove the stolen ambulance from our local list and loop again
+                    UUID failedId = bestAmbulanceId;
+                    ambulances.removeIf(amb -> failedId.equals(readUuid(amb, "ambulanceId", "id")));
+                }
+            }
+            // ------------------------------------------------------------------
 
             // Update saga state
             saga.setAmbulanceId(bestAmbulanceId.toString());
@@ -69,13 +89,13 @@ public class MatchingService {
             saga.setState(SagaState.HOSPITAL_RESERVED);
             sagaRepository.save(saga);
 
-            HospitalAssigned hospitalEvent =
-                    new HospitalAssigned(UUID.randomUUID(),
+            HospitalAssignedEvent hospitalEvent =
+                    new HospitalAssignedEvent(UUID.randomUUID(),
                             Instant.now(), emergencyId, bestHospitalId, findHospitalName(bestHospitalId, hospitals));
             producer.publishHospitalAssigned(hospitalEvent);
 
-            DispatchAssigned dispatch =
-                    new DispatchAssigned(UUID.randomUUID(),
+            DispatchAssignedEvent dispatch =
+                    new DispatchAssignedEvent(UUID.randomUUID(),
                             Instant.now(), emergencyId, bestAmbulanceId, bestHospitalId);
             producer.publishDispatch(dispatch);
 

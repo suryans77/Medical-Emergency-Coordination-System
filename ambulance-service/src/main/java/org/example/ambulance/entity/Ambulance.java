@@ -12,6 +12,10 @@ public class Ambulance {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
+    // 🛡️ The Optimistic Lock
+    @Version
+    private Long version;
+
     private String registrationNumber;
     private String capabilities; // e.g., "ALS, Ventilator, Defibrillator"
     private String crewInfo;     // e.g., "2 Paramedics, 1 Driver"
