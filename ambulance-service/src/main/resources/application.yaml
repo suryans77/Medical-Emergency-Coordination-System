@@ -24,6 +24,8 @@ spring:
     consumer:
       auto-offset-reset: earliest
       group-id: ${spring.application.name}
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       properties:
         spring.json.trusted.packages: org.example.*
     producer:

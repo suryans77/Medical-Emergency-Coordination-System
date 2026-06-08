@@ -1,6 +1,7 @@
 package org.example.case_.consumer;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.JsonNode;
 import org.example.case_.entity.ProcessedEvent;
 import org.example.case_.entity.ProcessedEventId;
 import org.example.case_.repository.ProcessedEventRepository;
@@ -36,8 +37,14 @@ public class HospitalAssignedConsumer {
     public void consumeHospital(String jsonPayload) { // <-- NEW: Catch the raw String
 
         try {
+            JsonNode node = objectMapper.readTree(jsonPayload);
+            if (!node.has("hospitalName")) {
+                System.out.println("Case Service received non-HospitalAssigned event on hospital-events; skipping.");
+                return;
+            }
+
             // NEW: Translate the JSON string back into your Java record
-            HospitalAssignedEvent event = objectMapper.readValue(jsonPayload, HospitalAssignedEvent.class);
+            HospitalAssignedEvent event = objectMapper.treeToValue(node, HospitalAssignedEvent.class);
 
             // Extract the unique event ID
             String eventIdString = event.eventId().toString();

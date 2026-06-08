@@ -32,7 +32,7 @@ spring:
       acks: all
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       retries: 10
-      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
       properties:
         enable.idempotence: true
 

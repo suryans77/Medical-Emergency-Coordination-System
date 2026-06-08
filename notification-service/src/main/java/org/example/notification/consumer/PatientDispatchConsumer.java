@@ -1,6 +1,7 @@
 package org.example.notification.consumer;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.JsonNode;
 import org.example.notification.entity.ProcessedEvent;
 import org.example.notification.entity.ProcessedEventId;
 import org.example.notification.repository.ProcessedEventRepository;
@@ -36,8 +37,14 @@ public class PatientDispatchConsumer {
     @Transactional
     public void notifyPickup(String jsonPayload) {
         try {
+            JsonNode node = objectMapper.readTree(jsonPayload);
+            if (!node.has("pickedUpAt")) {
+                System.out.println("Notification Service received non-pickup event on ambulance-events; skipping.");
+                return;
+            }
+
             // 1. TRANSLATE: Convert JSON to Java Record
-            PatientPickedUpEvent event = objectMapper.readValue(jsonPayload, PatientPickedUpEvent.class);
+            PatientPickedUpEvent event = objectMapper.treeToValue(node, PatientPickedUpEvent.class);
 
             String eventIdString = event.eventId().toString();
             ProcessedEventId id = new ProcessedEventId(eventIdString, CONSUMER_NAME);
@@ -70,7 +77,7 @@ public class PatientDispatchConsumer {
         try {
             // Some topics (e.g. "hospital-events") carry multiple event types (PatientDeliveredEvent, HospitalAssignedEvent).
             // We must detect the concrete event shape before deserializing to the specific record.
-            com.fasterxml.jackson.databind.JsonNode node = objectMapper.readTree(jsonPayload);
+            JsonNode node = objectMapper.readTree(jsonPayload);
 
             if (node.has("deliveredAt")) {
                 // It's a PatientDeliveredEvent
@@ -89,7 +96,7 @@ public class PatientDispatchConsumer {
                 notificationService.notify(
                         "Emergency Resolved: " + event.emergencyId(),
                         "The patient has safely arrived at Hospital " + event.hospitalId() + ". Emergency resolved.",
-                        "Ambulance ID: " + event.hospitalId()
+                        "Hospital ID: " + event.hospitalId()
                 );
 
                 // 4. Mark Event as Processed

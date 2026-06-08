@@ -2,9 +2,9 @@
 ### E2E SYSTEM TEST SUITE
 ### Update these 3 variables ONLY AFTER running Step 2
 ### ============================================================================
-@ambulanceId = paste-ambulance-uuid-here
-@emergencyId = paste-emergency-uuid-here
-@hospitalId = paste-hospital-uuid-here
+@ambulanceId = b9399a72-a368-4f7d-802b-651a4f032bc7
+@emergencyId = 0024c66f-42be-4a9b-a814-72a217b0e0a1
+@hospitalId = 7bbd1da5-26d4-4f80-a419-49e7e4d50386
 
 @emergencyHost = http://localhost:8082
 @ambulanceHost = http://localhost:8083
