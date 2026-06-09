@@ -3,11 +3,14 @@ package org.example.ambulance.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.example.ambulance.entity.Ambulance;
 import org.example.ambulance.entity.OutboxEvent;
+import org.example.ambulance.repository.IdempotentRequestRepository;
 import org.example.ambulance.repository.OutboxRepository;
 import org.example.ambulance.service.AmbulanceService;
+import org.example.ambulance.entity.IdempotentRequest;
 import org.example.shared.enums.AmbulanceStatus;
 import org.example.shared.events.PatientDeliveredEvent;
 import org.example.shared.events.PatientPickedUpEvent;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
@@ -15,6 +18,7 @@ import org.springframework.web.bind.annotation.*;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 @RestController
@@ -24,12 +28,14 @@ public class AmbulanceController {
     private final AmbulanceService service;
     private final OutboxRepository outboxRepository;
     private final ObjectMapper objectMapper;
+    private final IdempotentRequestRepository idempotencyRepository;
 
     // We injected OutboxRepository and ObjectMapper instead of the Producer
-    public AmbulanceController(AmbulanceService service, OutboxRepository outboxRepository, ObjectMapper objectMapper) {
+    public AmbulanceController(AmbulanceService service, OutboxRepository outboxRepository, ObjectMapper objectMapper, IdempotentRequestRepository idempotencyRepository) {
         this.service = service;
         this.outboxRepository = outboxRepository;
         this.objectMapper = objectMapper;
+        this.idempotencyRepository = idempotencyRepository;
     }
 
     @GetMapping
@@ -93,5 +99,34 @@ public class AmbulanceController {
         outboxRepository.save(new OutboxEvent(emergencyId.toString(), "PatientDeliveredEvent", payload));
 
         return ResponseEntity.ok().build();
+    }
+
+    // 🚑 REGISTER AMBULANCE (Fully Idempotent)
+    @PostMapping
+    public ResponseEntity<?> registerAmbulance(
+            @RequestBody Ambulance ambulance,
+            @RequestHeader(value = "Idempotency-Key", required = true) String idempotencyKey) {
+
+        // 🛡️ 1. Idempotency Check
+        Optional<IdempotentRequest> existingRequest = idempotencyRepository.findById(idempotencyKey);
+
+        if (existingRequest.isPresent()) {
+            System.out.println("♻️ Duplicate POST intercepted. Returning cached response for key: " + idempotencyKey);
+            return ResponseEntity.status(existingRequest.get().getResponseStatus()).build();
+        }
+
+        try {
+            // ⚙️ 2. Execute Business Logic
+            Ambulance savedAmbulance = service.registerAmbulance(ambulance);
+
+            // 💾 3. Save successful Idempotency Key
+            idempotencyRepository.save(new IdempotentRequest(idempotencyKey, "Ambulance registered", HttpStatus.CREATED.value()));
+            return ResponseEntity.status(HttpStatus.CREATED).body(savedAmbulance);
+
+        } catch (IllegalStateException e) {
+            // Handle the case where someone tries to register a DIFFERENT ambulance with an existing registration number
+            idempotencyRepository.save(new IdempotentRequest(idempotencyKey, e.getMessage(), HttpStatus.CONFLICT.value()));
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
+        }
     }
 }

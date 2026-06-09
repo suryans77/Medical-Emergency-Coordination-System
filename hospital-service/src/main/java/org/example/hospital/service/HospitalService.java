@@ -33,4 +33,9 @@ public class HospitalService {
         hospital.setAvailableBeds(hospital.getAvailableBeds() - 1);
         repository.save(hospital);
     }
+
+    public Hospital registerHospital(Hospital hospital) {
+        // Direct save - the controller handles the idempotency logic
+        return repository.save(hospital);
+    }
 }

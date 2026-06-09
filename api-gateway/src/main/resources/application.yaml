@@ -1,46 +1,80 @@
 server:
   port: ${SERVER_PORT:8080}
 
+jwt:
+  secret: 4A6F7264616E526F62657274735365637265744B657931323334353637383930
+  expiration: 86400000
+
 spring:
   application:
     name: api-gateway
   cloud:
     gateway:
       server:
-        webmvc:
+        webflux:
           routes:
             - id: user-service
               uri: ${USER_SERVICE_URL:http://localhost:8081}
               predicates:
                 - Path=/api/users/**,/api/auth/**
+              filters:
+                - StripPrefix=1
+
             - id: emergency-request-service
               uri: ${EMERGENCY_REQUEST_SERVICE_URL:http://localhost:8082}
               predicates:
-                - Path=/api/emergencies/**
+                - Path=/api/emergency/**
+              filters:
+                - JwtAuthenticationFilter
+                - StripPrefix=1
+
             - id: ambulance-service
               uri: ${AMBULANCE_SERVICE_URL:http://localhost:8083}
               predicates:
                 - Path=/api/ambulances/**
+              filters:
+                - JwtAuthenticationFilter
+                - StripPrefix=1
+
             - id: location-service
               uri: ${LOCATION_SERVICE_URL:http://localhost:8084}
               predicates:
                 - Path=/api/locations/**
+              filters:
+                - JwtAuthenticationFilter
+                - StripPrefix=1
+
             - id: matching-service
               uri: ${MATCHING_SERVICE_URL:http://localhost:8085}
               predicates:
                 - Path=/api/matching/**
+              filters:
+                - JwtAuthenticationFilter
+                - StripPrefix=1
+
             - id: hospital-service
               uri: ${HOSPITAL_SERVICE_URL:http://localhost:8086}
               predicates:
                 - Path=/api/hospitals/**
+              filters:
+                - JwtAuthenticationFilter
+                - StripPrefix=1
+
             - id: case-service
               uri: ${CASE_SERVICE_URL:http://localhost:8087}
               predicates:
                 - Path=/api/cases/**
+              filters:
+                - JwtAuthenticationFilter
+                - StripPrefix=1
+
             - id: notification-service
               uri: ${NOTIFICATION_SERVICE_URL:http://localhost:8088}
               predicates:
                 - Path=/api/notifications/**,/ws/**
+              filters:
+                - JwtAuthenticationFilter
+                - StripPrefix=1
 
 management:
   endpoints:

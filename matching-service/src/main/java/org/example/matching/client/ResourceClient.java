@@ -2,6 +2,8 @@ package org.example.matching.client;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClientException;
@@ -107,11 +109,24 @@ public class ResourceClient {
     }
 
     public void reserveHospitalBed(UUID hospitalId) {
+        // Generate the Idempotency Key OUTSIDE the retry loop.
+        // This ensures that if the network drops, all 3 retries use the exact same key.
+        String idempotencyKey = UUID.randomUUID().toString();
+
         executeWithRetry(() -> {
-            System.out.println("🌐 Network Call: Reserving bed at Hospital " + hospitalId + "...");
+            System.out.println("🌐 Network Call: Reserving bed at Hospital " + hospitalId + " (Attempt Key: " + idempotencyKey + ")");
+
+            // 1. Create the Headers
+            HttpHeaders headers = new HttpHeaders();
+            headers.set("Idempotency-Key", idempotencyKey);
+
+            // 2. Wrap it in an HttpEntity (Since it's a PATCH, body can be null, but we need the headers)
+            HttpEntity<Void> requestEntity = new HttpEntity<>(headers);
+
+            // 3. Send the request
             restTemplate.patchForObject(
                     hospitalUrl + "/hospitals/" + hospitalId + "/reserve-bed",
-                    null,
+                    requestEntity,
                     String.class
             );
             return true;

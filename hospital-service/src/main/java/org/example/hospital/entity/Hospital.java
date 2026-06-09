@@ -1,6 +1,7 @@
 package org.example.hospital.entity;
 
 import jakarta.persistence.*;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.UUID;
 
 @Entity
@@ -11,8 +12,13 @@ public class Hospital {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
+    @JsonProperty("hospitalName")
     private String name;
     private Integer availableBeds;
+
+    @Version
+    private Long version;
+
     private double latitude;
     private double longitude;
 

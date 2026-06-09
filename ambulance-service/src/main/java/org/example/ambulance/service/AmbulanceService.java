@@ -32,4 +32,14 @@ public class AmbulanceService {
         ambulance.setStatus(newStatus);
         repository.save(ambulance);
     }
+
+    public Ambulance registerAmbulance(Ambulance ambulance) {
+        // Don't save if the registration number already exists
+        if (repository.findByRegistrationNumber(ambulance.getRegistrationNumber()).isPresent()) {
+            throw new IllegalStateException("Ambulance with this registration number already exists");
+        }
+
+        ambulance.setStatus(AmbulanceStatus.AVAILABLE);
+        return repository.save(ambulance);
+    }
 }

@@ -1,63 +1,168 @@
-### ============================================================================
-### E2E SYSTEM TEST SUITE
-### Update these 3 variables ONLY AFTER running Step 2
-### ============================================================================
-@ambulanceId = b9399a72-a368-4f7d-802b-651a4f032bc7
-@emergencyId = 0024c66f-42be-4a9b-a814-72a217b0e0a1
-@hospitalId = 7bbd1da5-26d4-4f80-a419-49e7e4d50386
+### ==========================================
+### 0. SETUP: CREATE OUR USERS
+### ==========================================
 
-@emergencyHost = http://localhost:8082
-@ambulanceHost = http://localhost:8083
-@locationHost = http://localhost:8084
-@hospitalHost = http://localhost:8086
-
-### ============================================================================
-### PHASE 1: PRE-FLIGHT CHECKS (Run these to verify system state before disaster)
-### ============================================================================
-
-### 1A. Check Available Ambulances (Note how many are AVAILABLE)
-GET {{ambulanceHost}}/ambulances
-Accept: application/json
-
-### 1B. Check Available Hospitals (Note the bed count at AIIMS)
-GET {{hospitalHost}}/hospitals?minBeds=1
-Accept: application/json
-
-
-### ============================================================================
-### PHASE 2: THE CATALYST (The Event-Driven Entry Point)
-### ============================================================================
-
-### 2. Create Emergency
-# -> Hits the Emergency Service (8082)
-# -> Publishes to Kafka (emergency-events)
-# -> Matching Service consumes it and triggers the Saga!
-POST {{emergencyHost}}/emergency
+### Create Dispatcher
+POST http://localhost:8080/api/auth/register
 Content-Type: application/json
 
 {
-  "patientId": "Patient-007",
-  "severity": "CRITICAL",
-  "latitude": 20.29,
-  "longitude": 85.81
+  "name": "Dave Dispatcher",
+  "email": "dispatcher@mediflow.com",
+  "password": "password123",
+  "role": "DISPATCHER"
 }
 
-### ============================================================================
-### PHASE 3: PARAMEDIC HANDOFF (Manual field actions)
-### ============================================================================
-
-### 3A. Verify Ambulance is now RESERVED (Automatic from Saga)
-GET {{ambulanceHost}}/ambulances
-Accept: application/json
-
-### 3B. Paramedic Action: Patient Picked Up (Changes to IN_TRANSIT)
-POST {{ambulanceHost}}/ambulances/{{ambulanceId}}/pickup/{{emergencyId}}
+### Create Paramedic
+POST http://localhost:8080/api/auth/register
 Content-Type: application/json
 
-### 3C. Paramedic Action: Patient Delivered (Changes to AVAILABLE)
-POST {{ambulanceHost}}/ambulances/{{ambulanceId}}/deliver/{{emergencyId}}/{{hospitalId}}
+{
+  "name": "Pam Paramedic",
+  "email": "paramedic@mediflow.com",
+  "password": "password123",
+  "role": "PARAMEDIC"
+}
+
+### Create Admin
+POST http://localhost:8080/api/auth/register
 Content-Type: application/json
 
-### 3D. Check Hospital Beds (Verify the bed was actually consumed/updated)
-GET {{hospitalHost}}/hospitals
-Accept: application/json
+{
+  "name": "Alice Admin",
+  "email": "admin@mediflow.com",
+  "password": "adminpassword",
+  "role": "ADMIN"
+}
+
+
+
+
+### ==========================================
+### SCENARIO 1: Valid Dispatcher Creates Emergency
+### ==========================================
+
+### 1A. Login as Dispatcher (Copy the token from the response!)
+POST http://localhost:8080/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "dispatcher@mediflow.com",
+  "password": "password123"
+}
+
+### 1B. Create Emergency (Paste token below)
+POST http://localhost:8080/api/emergency
+Content-Type: application/json
+Idempotency-Key: {{$uuid}}
+Authorization: Bearer eyJhbGciOiJIUzM4NCJ9.eyJyb2xlIjoiRElTUEFUQ0hFUiIsInN1YiI6IjIiLCJpYXQiOjE3ODEwMTUyNzgsImV4cCI6MTc4MTEwMTY3OH0.toiAIoFwzEVHjmxbyjwjiUTCw12rqofaoVEeY8Z0TFieGLCAu70J8Mkva3_SrYNR
+
+{
+  "patientId": "PAT-98765",
+  "severity": "CRITICAL",
+  "latitude": 28.6139,
+  "longitude": 77.2090
+}
+
+### ==========================================
+### SCENARIO 2: Invalid JWT is Rejected
+### ==========================================
+
+### 2A. Attempt request with fake token
+POST http://localhost:8080/api/emergency
+Content-Type: application/json
+Idempotency-Key: 123765
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.fake.token
+
+### EXPECTED: 401 Unauthorized
+
+
+### ==========================================
+### SCENARIO 3: Paramedic Cannot Create Hospital
+### ==========================================
+
+### 3A. Login as Paramedic (Copy the token!)
+POST http://localhost:8080/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "paramedic@mediflow.com",
+  "password": "password123"
+}
+
+### 3B. Attempt to access a restricted Admin endpoint
+POST http://localhost:8080/api/hospitals
+Content-Type: application/json
+Idempotency-Key: 2398736
+Authorization: Bearer eyJhbGciOiJIUzM4NCJ9.eyJyb2xlIjoiUEFSQU1FRElDIiwic3ViIjoiMiIsImlhdCI6MTc4MTAxMjI2MiwiZXhwIjoxNzgxMDk4NjYyfQ.GsFh9Dc1fEuu_ycUtey6rz6U32C6bAEP-58oRtgWtFPxxSXU31r6SMpessMEuelH
+
+{
+  "name": "City General",
+  "totalBeds": 150,
+  "latitude": 28.6139,
+  "longitude": 77.2090
+}
+
+### EXPECTED: 403 Forbidden
+
+
+### ==========================================
+### SCENARIO 4: Admin Creates Hospital
+### ==========================================
+
+### 4A. Login as Admin (Copy the token!)
+POST http://localhost:8080/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@mediflow.com",
+  "password": "adminpassword"
+}
+
+### 4B. Admin accesses restricted endpoint
+POST http://localhost:8080/api/hospitals
+Content-Type: application/json
+Idempotency-Key: 234546
+Authorization: Bearer eyJhbGciOiJIUzM4NCJ9.eyJyb2xlIjoiQURNSU4iLCJzdWIiOiIxIiwiaWF0IjoxNzgxMDEyMzA2LCJleHAiOjE3ODEwOTg3MDZ9.RFv_IOq1xpUlH2_wau0DULRwtsogMhcfihCgskKb7Tp46p7j1cGIGmVFDPh-Px3t
+
+{
+  "name": "City General",
+  "totalBeds": 150,
+  "latitude": 28.6139,
+  "longitude": 77.2090
+}
+
+### EXPECTED: 201 Created
+
+### ==========================================
+### ADD A NEW AMBULANCE
+### ==========================================
+
+### Add Advanced Life Support Ambulance
+POST http://localhost:8080/api/ambulances
+Content-Type: application/json
+Idempotency-Key: {{$uuid}}
+Authorization: Bearer eyJhbGciOiJIUzM4NCJ9.eyJyb2xlIjoiQURNSU4iLCJzdWIiOiIxIiwiaWF0IjoxNzgxMDE0MTYwLCJleHAiOjE3ODExMDA1NjB9.d-ngV2m_iIm-JwMdhhnEvVbLAcoeNdBQGuNJh-BUXGPE20zzDcSXuRiL8wF74Ufg
+
+{
+  "registrationNumber": "DL-1C-AA-1123",
+  "capabilities": "ALS, Ventilator, Defibrillator",
+  "crewInfo": "2 Paramedics, 1 Driver"
+}
+
+### ==========================================
+### ADD A NEW HOSPITAL
+### ==========================================
+
+### Admin accesses restricted endpoint using proper DTO payload
+POST http://localhost:8080/api/hospitals
+Content-Type: application/json
+Idempotency-Key: {{$uuid}}
+Authorization: Bearer eyJhbGciOiJIUzM4NCJ9.eyJyb2xlIjoiQURNSU4iLCJzdWIiOiIxIiwiaWF0IjoxNzgxMDE0MTYwLCJleHAiOjE3ODExMDA1NjB9.d-ngV2m_iIm-JwMdhhnEvVbLAcoeNdBQGuNJh-BUXGPE20zzDcSXuRiL8wF74Ufg
+
+{
+  "hospitalName": "Apollo Downtown 5",
+  "availableBeds": 250,
+  "latitude": 28.6150,
+  "longitude": 77.2100
+}

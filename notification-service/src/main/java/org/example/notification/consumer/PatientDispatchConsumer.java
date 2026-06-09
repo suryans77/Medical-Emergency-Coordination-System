@@ -39,7 +39,7 @@ public class PatientDispatchConsumer {
         try {
             JsonNode node = objectMapper.readTree(jsonPayload);
             if (!node.has("pickedUpAt")) {
-                System.out.println("Notification Service received non-pickup event on ambulance-events; skipping.");
+                //System.out.println("Notification Service received non-pickup event on ambulance-events; skipping.");
                 return;
             }
 
@@ -103,7 +103,7 @@ public class PatientDispatchConsumer {
                 processedEventRepository.save(new ProcessedEvent(eventIdString, CONSUMER_NAME, Instant.now()));
             } else {
                 // Unknown or not a PatientDeliveredEvent - ignore or log for now
-                System.out.println("ℹ️ Received non-delivery event on hospital-events topic; skipping. Raw: " + jsonPayload);
+                //System.out.println("ℹ️ Received non-delivery event on hospital-events topic; skipping. Raw: " + jsonPayload);
             }
 
         } catch (Exception e) {

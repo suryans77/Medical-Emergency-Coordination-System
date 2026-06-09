@@ -16,3 +16,7 @@ management:
   otlp:
     tracing:
       endpoint: http://localhost:4318/v1/traces
+
+jwt:
+  secret: 4A6F7264616E526F62657274735365637265744B657931323334353637383930
+  expiration: 86400000
