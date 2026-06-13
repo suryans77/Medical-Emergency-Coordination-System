@@ -10,3 +10,29 @@ data:
   OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: http://jaeger:4318/v1/traces
   JWT_ISSUER: medical-emergency-coordination-system
   JWT_JWK_SET_URI: http://api-gateway:8080/.well-known/jwks.json
+  USER_SERVICE_URL: http://user-service:8081
+  EMERGENCY_REQUEST_SERVICE_URL: http://emergency-request-service:8082
+  AMBULANCE_SERVICE_URL: http://ambulance-service:8083
+  LOCATION_SERVICE_URL: http://location-service:8084
+  MATCHING_SERVICE_URL: http://matching-service:8085
+  HOSPITAL_SERVICE_URL: http://hospital-service:8086
+  CASE_SERVICE_URL: http://case-service:8087
+  NOTIFICATION_SERVICE_URL: http://notification-service:8088
+  USER_DB_HOST: user-db
+  USER_DB_PORT: "5432"
+  USER_DB_NAME: user_db
+  EMERGENCY_DB_HOST: emergency-db
+  EMERGENCY_DB_PORT: "5432"
+  EMERGENCY_DB_NAME: emergency_request_db
+  AMBULANCE_DB_HOST: ambulance-db
+  AMBULANCE_DB_PORT: "5432"
+  AMBULANCE_DB_NAME: ambulance_service
+  HOSPITAL_DB_HOST: hospital-db
+  HOSPITAL_DB_PORT: "5432"
+  HOSPITAL_DB_NAME: hospital_db
+  CASE_DB_HOST: case-db
+  CASE_DB_PORT: "5432"
+  CASE_DB_NAME: case_db
+  MATCHING_HOST: matching-db
+  MATCHING_PORT: "5432"
+  MATCHING_NAME: matching_db

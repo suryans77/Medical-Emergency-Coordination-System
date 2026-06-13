@@ -51,8 +51,6 @@ medical:
     topics:
       location-events: location-events
       ambulance-events: ambulance-events
-  grpc:
-    server-port: ${LOCATION_GRPC_PORT:9094}
   idempotency:
     enabled: true
     processed-event-retention: 30d

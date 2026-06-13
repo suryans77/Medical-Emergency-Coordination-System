@@ -1,0 +1,2 @@
+﻿# Created by copilot
+management:\n  endpoints:\n    web:\n      exposure:\n        include: health\n  health:\n    probes:\n      enabled: true\n

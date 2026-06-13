@@ -15,4 +15,8 @@ spring:
 management:
   otlp:
     tracing:
-      endpoint: http://localhost:4318/v1/traces
+      endpoint: ${OTEL_EXPORTER_OTLP_TRACES_ENDPOINT:http://localhost:4318/v1/traces}
+
+jwt:
+  secret: ${JWT_SECRET:4A6F7264616E526F62657274735365637265744B657931323334353637383930}
+  expiration: ${JWT_EXPIRATION_MS:86400000}

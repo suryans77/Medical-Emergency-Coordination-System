@@ -63,8 +63,6 @@ medical:
       ambulance-events: ambulance-events
       hospital-events: hospital-events
       matching-events: matching-events
-  grpc:
-    location-service-target: ${LOCATION_GRPC_TARGET:localhost:9094}
   idempotency:
     enabled: true
     redis-key-prefix: processed-event
@@ -78,6 +76,6 @@ medical:
       jwk-set-uri: ${JWT_JWK_SET_URI:http://localhost:8080/.well-known/jwks.json}
 
 services:
-  ambulance-url: http://localhost:8083
-  location-url: http://localhost:8084
-  hospital-url: http://localhost:8086
+  ambulance-url: ${AMBULANCE_SERVICE_URL:http://localhost:8083}
+  location-url: ${LOCATION_SERVICE_URL:http://localhost:8084}
+  hospital-url: ${HOSPITAL_SERVICE_URL:http://localhost:8086}

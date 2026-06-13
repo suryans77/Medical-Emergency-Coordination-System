@@ -12,7 +12,7 @@
 
     <artifactId>location-service</artifactId>
     <name>location-service</name>
-    <description>GPS ingestion, Redis GEO lookup, PostGIS, and gRPC streaming service</description>
+    <description>GPS ingestion, Redis GEO lookup, and REST location service</description>
 
     <dependencies>
         <dependency>
@@ -51,22 +51,6 @@
         <dependency>
             <groupId>org.springframework.cloud</groupId>
             <artifactId>spring-cloud-starter-circuitbreaker-resilience4j</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.grpc</groupId>
-            <artifactId>grpc-netty-shaded</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.grpc</groupId>
-            <artifactId>grpc-protobuf</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.grpc</groupId>
-            <artifactId>grpc-stub</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.google.protobuf</groupId>
-            <artifactId>protobuf-java</artifactId>
         </dependency>
         <dependency>
             <groupId>io.micrometer</groupId>
