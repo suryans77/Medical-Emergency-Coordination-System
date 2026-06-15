@@ -13,6 +13,7 @@ public class EmergencyCase {
     @GeneratedValue
     private UUID caseId;
 
+    @Column(nullable = false, unique = true)
     private UUID emergencyId;
     private UUID ambulanceId;
     private UUID hospitalId;

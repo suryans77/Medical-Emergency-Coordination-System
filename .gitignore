@@ -37,3 +37,6 @@ build/
 
 ### Mac OS ###
 .DS_Store
+
+### Kubernetes local secrets ###
+k8s/secrets/*.yaml

@@ -55,7 +55,7 @@ Content-Type: application/json
 POST http://localhost:8080/api/emergency
 Content-Type: application/json
 Idempotency-Key: {{$uuid}}
-Authorization: Bearer eyJhbGciOiJIUzM4NCJ9.eyJyb2xlIjoiRElTUEFUQ0hFUiIsInN1YiI6IjIiLCJpYXQiOjE3ODEwMTUyNzgsImV4cCI6MTc4MTEwMTY3OH0.toiAIoFwzEVHjmxbyjwjiUTCw12rqofaoVEeY8Z0TFieGLCAu70J8Mkva3_SrYNR
+Authorization: Bearer eyJhbGciOiJIUzM4NCJ9.eyJyb2xlIjoiRElTUEFUQ0hFUiIsInN1YiI6IjEiLCJpYXQiOjE3ODE1MDAwMDAsImV4cCI6MTc4MTU4NjQwMH0.wk7QYQwcWxVPa_zN0cgnk7HXwMcWGku9Y2pjp8SypE5Bl-na5_yxT4o7cOp7aKvd
 
 {
   "patientId": "PAT-98765",
@@ -142,7 +142,7 @@ Authorization: Bearer eyJhbGciOiJIUzM4NCJ9.eyJyb2xlIjoiQURNSU4iLCJzdWIiOiIxIiwia
 POST http://localhost:8080/api/ambulances
 Content-Type: application/json
 Idempotency-Key: {{$uuid}}
-Authorization: Bearer eyJhbGciOiJIUzM4NCJ9.eyJyb2xlIjoiQURNSU4iLCJzdWIiOiIxIiwiaWF0IjoxNzgxMDE0MTYwLCJleHAiOjE3ODExMDA1NjB9.d-ngV2m_iIm-JwMdhhnEvVbLAcoeNdBQGuNJh-BUXGPE20zzDcSXuRiL8wF74Ufg
+Authorization: Bearer eyJhbGciOiJIUzM4NCJ9.eyJyb2xlIjoiQURNSU4iLCJzdWIiOiIyIiwiaWF0IjoxNzgxNDk5OTM0LCJleHAiOjE3ODE1ODYzMzR9._8ltUwEV3Ekl5MeEUnhz7Sxkv8PnDJYRn1cThAkeqJbCqvU0agXTshtcO4XO-vc6
 
 {
   "registrationNumber": "DL-1C-AA-1123",
@@ -158,7 +158,7 @@ Authorization: Bearer eyJhbGciOiJIUzM4NCJ9.eyJyb2xlIjoiQURNSU4iLCJzdWIiOiIxIiwia
 POST http://localhost:8080/api/hospitals
 Content-Type: application/json
 Idempotency-Key: {{$uuid}}
-Authorization: Bearer eyJhbGciOiJIUzM4NCJ9.eyJyb2xlIjoiQURNSU4iLCJzdWIiOiIxIiwiaWF0IjoxNzgxMDE0MTYwLCJleHAiOjE3ODExMDA1NjB9.d-ngV2m_iIm-JwMdhhnEvVbLAcoeNdBQGuNJh-BUXGPE20zzDcSXuRiL8wF74Ufg
+Authorization: Bearer eyJhbGciOiJIUzM4NCJ9.eyJyb2xlIjoiQURNSU4iLCJzdWIiOiIyIiwiaWF0IjoxNzgxNDk5OTM0LCJleHAiOjE3ODE1ODYzMzR9._8ltUwEV3Ekl5MeEUnhz7Sxkv8PnDJYRn1cThAkeqJbCqvU0agXTshtcO4XO-vc6
 
 {
   "hospitalName": "Apollo Downtown 5",

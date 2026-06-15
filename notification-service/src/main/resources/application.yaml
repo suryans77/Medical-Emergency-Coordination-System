@@ -4,6 +4,15 @@ server:
 spring:
   application:
     name: notification-service
+  datasource:
+    url: jdbc:postgresql://${NOTIFICATION_DB_HOST:localhost}:${NOTIFICATION_DB_PORT:5440}/${NOTIFICATION_DB_NAME:notification_db}
+    username: ${NOTIFICATION_DB_USERNAME:medical}
+    password: ${NOTIFICATION_DB_PASSWORD:medical}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:29092}
     consumer:
@@ -31,6 +40,14 @@ management:
       probes:
         enabled: true
       show-details: when_authorized
+  health:
+    livenessstate:
+      enabled: true
+    readinessstate:
+      enabled: true
+    metrics:
+      tags:
+        application: ${spring.application.name}
   metrics:
     tags:
       application: ${spring.application.name}

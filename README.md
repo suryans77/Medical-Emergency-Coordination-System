@@ -60,7 +60,7 @@ The `api-gateway`, `user-service`, `k8s`, and `observability` folders exist in t
 | Kafka | 29092 | Event broker |
 | Redis | 6379 | Latest ambulance locations |
 | emergency-db | 5434 | `emergency_request_db` |
-| ambulance-db | 5435 | `ambulance_service` |
+| ambulance-db | 5435 | `ambulance_db` |
 | hospital-db | 5436 | `hospital_db` |
 | matching-db | 5437 | `matching_db` |
 | case-db | 5439 | `case_db` |

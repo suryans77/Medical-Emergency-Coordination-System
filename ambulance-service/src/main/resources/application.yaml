@@ -5,7 +5,7 @@ spring:
   application:
     name: ambulance-service
   datasource:
-    url: jdbc:postgresql://${AMBULANCE_DB_HOST:localhost}:${AMBULANCE_DB_PORT:5435}/${AMBULANCE_DB_NAME:ambulance_service}
+    url: jdbc:postgresql://${AMBULANCE_DB_HOST:localhost}:${AMBULANCE_DB_PORT:5435}/${AMBULANCE_DB_NAME:ambulance_db}
     username: ${AMBULANCE_DB_USERNAME:medical}
     password: ${AMBULANCE_DB_PASSWORD:medical}
   flyway:
