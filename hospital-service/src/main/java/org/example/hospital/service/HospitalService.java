@@ -2,6 +2,7 @@ package org.example.hospital.service;
 
 import org.example.hospital.entity.Hospital;
 import org.example.hospital.repository.HospitalRepository;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -12,9 +13,12 @@ import java.util.UUID;
 public class HospitalService {
 
     private final HospitalRepository repository;
+    private final boolean forceReservationFailure;
 
-    public HospitalService(HospitalRepository repository) {
+    public HospitalService(HospitalRepository repository,
+                           @Value("${FORCE_RESERVATION_FAILURE:false}") boolean forceReservationFailure) {
         this.repository = repository;
+        this.forceReservationFailure = forceReservationFailure;
     }
 
     public List<Hospital> getAvailableHospitals(int minBeds) {
@@ -23,6 +27,10 @@ public class HospitalService {
 
     @Transactional
     public void reserveBed(UUID hospitalId) {
+        if (forceReservationFailure) {
+            throw new IllegalStateException("Forced reservation failure for saga recovery test");
+        }
+
         Hospital hospital = repository.findById(hospitalId)
                 .orElseThrow(() -> new RuntimeException("Hospital not found: " + hospitalId));
 

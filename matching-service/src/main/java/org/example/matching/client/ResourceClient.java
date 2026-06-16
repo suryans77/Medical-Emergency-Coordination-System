@@ -48,8 +48,6 @@ public class ResourceClient {
                     throw e; // We are out of tries, let the Outbox fail and roll back
                 }
 
-                System.out.println("⚠️ [" + operationName + "] Network glitch. Retrying attempt " + (attempt + 1) + " in " + backoffMs + "ms...");
-
                 try {
                     Thread.sleep(backoffMs); // Pause the thread
                 } catch (InterruptedException ie) {
@@ -67,7 +65,6 @@ public class ResourceClient {
 
     public List<Map<String, Object>> fetchAvailableAmbulances(String status) {
         return executeWithRetry(() -> {
-            System.out.println("🌐 Network Call: Fetching Ambulances...");
             return restTemplate.exchange(
                     ambulanceUrl + "/ambulances?status=" + status,
                     HttpMethod.GET, null, new ParameterizedTypeReference<List<Map<String, Object>>>() {}
@@ -77,7 +74,6 @@ public class ResourceClient {
 
     public List<Map<String, Object>> fetchLocations() {
         return executeWithRetry(() -> {
-            System.out.println("🌐 Network Call: Fetching Locations...");
             return restTemplate.exchange(
                     locationUrl + "/locations",
                     HttpMethod.GET, null, new ParameterizedTypeReference<List<Map<String, Object>>>() {}
@@ -87,7 +83,6 @@ public class ResourceClient {
 
     public List<Map<String, Object>> fetchHospitals(int minBeds) {
         return executeWithRetry(() -> {
-            System.out.println("🌐 Network Call: Fetching Hospitals...");
             return restTemplate.exchange(
                     hospitalUrl + "/hospitals?minBeds=" + minBeds,
                     HttpMethod.GET, null, new ParameterizedTypeReference<List<Map<String, Object>>>() {}
@@ -98,7 +93,6 @@ public class ResourceClient {
     // For Void methods, we just return a dummy value (true) to satisfy the Supplier
     public void reserveAmbulance(UUID ambulanceId, String status) {
         executeWithRetry(() -> {
-            System.out.println("🌐 Network Call: Reserving Ambulance " + ambulanceId + "...");
             restTemplate.patchForObject(
                     ambulanceUrl + "/ambulances/" + ambulanceId + "/status",
                     Map.of("status", status),
@@ -114,8 +108,6 @@ public class ResourceClient {
         String idempotencyKey = UUID.randomUUID().toString();
 
         executeWithRetry(() -> {
-            System.out.println("🌐 Network Call: Reserving bed at Hospital " + hospitalId + " (Attempt Key: " + idempotencyKey + ")");
-
             // 1. Create the Headers
             HttpHeaders headers = new HttpHeaders();
             headers.set("Idempotency-Key", idempotencyKey);
@@ -135,7 +127,6 @@ public class ResourceClient {
 
     public void releaseAmbulance(UUID ambulanceId) {
         executeWithRetry(() -> {
-            System.out.println("⏪ ROLLBACK: Releasing Ambulance " + ambulanceId + " back to AVAILABLE...");
             restTemplate.patchForObject(
                     ambulanceUrl + "/ambulances/" + ambulanceId + "/status",
                     Map.of("status", "AVAILABLE"), // Put it back!

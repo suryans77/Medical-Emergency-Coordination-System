@@ -10,6 +10,8 @@ import org.example.ambulance.entity.IdempotentRequest;
 import org.example.shared.enums.AmbulanceStatus;
 import org.example.shared.events.PatientDeliveredEvent;
 import org.example.shared.events.PatientPickedUpEvent;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,13 +31,21 @@ public class AmbulanceController {
     private final OutboxRepository outboxRepository;
     private final ObjectMapper objectMapper;
     private final IdempotentRequestRepository idempotencyRepository;
+    private final Counter outboxEventsCreated;
 
     // We injected OutboxRepository and ObjectMapper instead of the Producer
-    public AmbulanceController(AmbulanceService service, OutboxRepository outboxRepository, ObjectMapper objectMapper, IdempotentRequestRepository idempotencyRepository) {
+    public AmbulanceController(AmbulanceService service,
+                               OutboxRepository outboxRepository,
+                               ObjectMapper objectMapper,
+                               IdempotentRequestRepository idempotencyRepository,
+                               MeterRegistry meterRegistry) {
         this.service = service;
         this.outboxRepository = outboxRepository;
         this.objectMapper = objectMapper;
         this.idempotencyRepository = idempotencyRepository;
+        this.outboxEventsCreated = Counter.builder("outbox_events_stored")
+                .description("Outbox events written to the ambulance service database")
+                .register(meterRegistry);
     }
 
     @GetMapping
@@ -71,6 +81,7 @@ public class AmbulanceController {
         // 💾 Serialize to JSON and save to Outbox
         String payload = objectMapper.writeValueAsString(event);
         outboxRepository.save(new OutboxEvent(emergencyId.toString(), "PatientPickedUpEvent", payload));
+        outboxEventsCreated.increment();
 
         return ResponseEntity.ok().build();
     }
@@ -97,6 +108,7 @@ public class AmbulanceController {
         // 💾 Serialize to JSON and save to Outbox
         String payload = objectMapper.writeValueAsString(event);
         outboxRepository.save(new OutboxEvent(emergencyId.toString(), "PatientDeliveredEvent", payload));
+        outboxEventsCreated.increment();
 
         return ResponseEntity.ok().build();
     }

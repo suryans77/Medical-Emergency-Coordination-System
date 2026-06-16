@@ -8,10 +8,15 @@ import org.example.matching.repository.SagaRepository;
 import org.example.shared.enums.AmbulanceStatus;
 import org.example.shared.events.DispatchAssignedEvent;
 import org.example.shared.events.HospitalAssignedEvent;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -23,21 +28,37 @@ public class MatchingService {
     private final ResourceClient resourceClient;
     private final DispatchProducer producer;
     private final SagaRepository sagaRepository;
+    private final Timer dispatchLatency;
+    private final Counter sagaStarted;
+    private final Counter sagaCompleted;
+    private final Counter sagaCompensated;
+    private final Counter sagaFailed;
 
-    public MatchingService(ResourceClient resourceClient, DispatchProducer producer, SagaRepository sagaRepository) {
+    public MatchingService(ResourceClient resourceClient,
+                           DispatchProducer producer,
+                           SagaRepository sagaRepository,
+                           MeterRegistry meterRegistry) {
         this.resourceClient = resourceClient;
         this.producer = producer;
         this.sagaRepository = sagaRepository;
+        this.dispatchLatency = Timer.builder("dispatch_latency")
+                .description("Time from emergency request creation to dispatch assignment")
+                .publishPercentiles(0.95)
+                .publishPercentileHistogram()
+                .register(meterRegistry);
+        this.sagaStarted = meterRegistry.counter("saga_started");
+        this.sagaCompleted = meterRegistry.counter("saga_completed");
+        this.sagaCompensated = meterRegistry.counter("saga_compensated");
+        this.sagaFailed = meterRegistry.counter("saga_failed");
     }
 
-    public void processEmergency(UUID emergencyId, double emergencyLat, double emergencyLon) {
+    public void processEmergency(UUID emergencyId, double emergencyLat, double emergencyLon, Instant emergencyCreatedAt) {
         // Initialize the saga save-point in the database
         DispatchSaga saga = new DispatchSaga(emergencyId.toString());
         saga = sagaRepository.save(saga);
+        sagaStarted.increment();
 
         try {
-            System.out.println("Finding resources for Emergency: " + emergencyId);
-
             List<Map<String, Object>> ambulances = resourceClient.fetchAvailableAmbulances(AmbulanceStatus.AVAILABLE.name());
             List<Map<String, Object>> locations = resourceClient.fetchLocations();
 
@@ -58,10 +79,7 @@ public class MatchingService {
                     // Try to lock it. If Optimistic Lock fails, this throws an HTTP Exception.
                     resourceClient.reserveAmbulance(bestAmbulanceId, AmbulanceStatus.RESERVED.name());
                     isReserved = true;
-                    System.out.println("Reserved Ambulance: " + bestAmbulanceId);
                 } catch (Exception e) {
-                    System.out.println("⚠️ Ambulance " + bestAmbulanceId + " was claimed by another request! Recalculating...");
-
                     // Remove the stolen ambulance from our local list and loop again
                     UUID failedId = bestAmbulanceId;
                     ambulances.removeIf(amb -> failedId.equals(readUuid(amb, "ambulanceId", "id")));
@@ -82,7 +100,6 @@ public class MatchingService {
             }
 
             resourceClient.reserveHospitalBed(bestHospitalId);
-            System.out.println("Reserved Bed at Hospital: " + bestHospitalId);
 
             // Update saga state
             saga.setHospitalId(bestHospitalId.toString());
@@ -98,10 +115,12 @@ public class MatchingService {
                     new DispatchAssignedEvent(UUID.randomUUID(),
                             Instant.now(), emergencyId, bestAmbulanceId, bestHospitalId);
             producer.publishDispatch(dispatch);
+            dispatchLatency.record(Duration.between(emergencyCreatedAt, Instant.now()));
 
             // Finalize saga state
             saga.setState(SagaState.COMPLETED);
             sagaRepository.save(saga);
+            sagaCompleted.increment();
 
         } catch (Exception e) {
             System.err.println("Match failed for Emergency " + emergencyId + ": " + e.getMessage());
@@ -112,6 +131,7 @@ public class MatchingService {
             } else {
                 saga.setState(SagaState.FAILED);
                 sagaRepository.save(saga);
+                sagaFailed.increment();
             }
         }
     }
@@ -119,11 +139,12 @@ public class MatchingService {
     private void compensateAmbulance(DispatchSaga saga) {
         try {
             resourceClient.releaseAmbulance(UUID.fromString(saga.getAmbulanceId()));
-            System.out.println("⏪ ROLLBACK: Ambulance " + saga.getAmbulanceId() + " safely released.");
             saga.setState(SagaState.COMPENSATED);
+            sagaCompensated.increment();
         } catch (Exception ex) {
             System.err.println("CRITICAL: Failed to release ambulance during saga compensation!");
             saga.setState(SagaState.FAILED);
+            sagaFailed.increment();
         }
         sagaRepository.save(saga);
     }
@@ -140,6 +161,14 @@ public class MatchingService {
 
         UUID closestId = null;
         double minDistance = Double.MAX_VALUE;
+        Map<UUID, Map<String, Object>> locationByAmbulanceId = new HashMap<>();
+
+        for (Map<String, Object> location : locations) {
+            UUID id = readUuid(location, "ambulanceId", "id");
+            if (id != null) {
+                locationByAmbulanceId.put(id, location);
+            }
+        }
 
         for (Map<String, Object> ambulance : ambulances) {
             UUID id = readUuid(ambulance, "ambulanceId", "id");
@@ -147,10 +176,7 @@ public class MatchingService {
                 continue;
             }
 
-            Map<String, Object> location = locations.stream()
-                    .filter(item -> id.equals(readUuid(item, "ambulanceId", "id")))
-                    .findFirst()
-                    .orElse(null);
+            Map<String, Object> location = locationByAmbulanceId.get(id);
 
             if (location != null) {
                 double distance = calculateDistance(
@@ -212,6 +238,9 @@ public class MatchingService {
     }
 
     private UUID readUuid(Map<String, Object> payload, String primaryKey, String fallbackKey) {
+        if (payload == null) {
+            return null;
+        }
         Object value = payload.get(primaryKey);
         if (value == null && fallbackKey != null) {
             value = payload.get(fallbackKey);
@@ -226,6 +255,9 @@ public class MatchingService {
     }
 
     private double readDouble(Map<String, Object> payload, String key) {
+        if (payload == null) {
+            return 0.0;
+        }
         Object value = payload.get(key);
         if (value instanceof Number number) {
             return number.doubleValue();
@@ -234,6 +266,9 @@ public class MatchingService {
     }
 
     private String readString(Map<String, Object> payload, String key, String fallback) {
+        if (payload == null) {
+            return fallback;
+        }
         Object value = payload.get(key);
         return value == null ? fallback : String.valueOf(value);
     }

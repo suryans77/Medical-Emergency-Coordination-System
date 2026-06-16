@@ -1,9 +1,13 @@
 ### ==========================================
+### ENVIRONMENT VARIABLES (CHANGE YOUR IP HERE)
+### ==========================================
+@host = http://localhost:8080
+### ==========================================
 ### 0. SETUP: CREATE OUR USERS
 ### ==========================================
 
 ### Create Dispatcher
-POST http://localhost:8080/api/auth/register
+POST {{host}}/api/auth/register
 Content-Type: application/json
 
 {
@@ -14,7 +18,7 @@ Content-Type: application/json
 }
 
 ### Create Paramedic
-POST http://localhost:8080/api/auth/register
+POST {{host}}/api/auth/register
 Content-Type: application/json
 
 {
@@ -25,7 +29,7 @@ Content-Type: application/json
 }
 
 ### Create Admin
-POST http://localhost:8080/api/auth/register
+POST {{host}}/api/auth/register
 Content-Type: application/json
 
 {
@@ -36,14 +40,12 @@ Content-Type: application/json
 }
 
 
-
-
 ### ==========================================
 ### SCENARIO 1: Valid Dispatcher Creates Emergency
 ### ==========================================
 
 ### 1A. Login as Dispatcher (Copy the token from the response!)
-POST http://localhost:8080/api/auth/login
+POST {{host}}/api/auth/login
 Content-Type: application/json
 
 {
@@ -52,24 +54,25 @@ Content-Type: application/json
 }
 
 ### 1B. Create Emergency (Paste token below)
-POST http://localhost:8080/api/emergency
+POST {{host}}/api/emergency
 Content-Type: application/json
 Idempotency-Key: {{$uuid}}
-Authorization: Bearer eyJhbGciOiJIUzM4NCJ9.eyJyb2xlIjoiRElTUEFUQ0hFUiIsInN1YiI6IjEiLCJpYXQiOjE3ODE1MDAwMDAsImV4cCI6MTc4MTU4NjQwMH0.wk7QYQwcWxVPa_zN0cgnk7HXwMcWGku9Y2pjp8SypE5Bl-na5_yxT4o7cOp7aKvd
+Authorization: Bearer eyJhbGciOiJIUzM4NCJ9.eyJyb2xlIjoiRElTUEFUQ0hFUiIsInN1YiI6IjEiLCJpYXQiOjE3ODE1MTI0NzksImV4cCI6MTc4MTU5ODg3OX0.qb7R-idKG8OuKrtICcsGcvzOLVZN6wSnG2mIPrTtG4SAl_NR7W2mnU3AZwifHmSs
 
 {
-  "patientId": "PAT-98765",
+  "patientId": "PAT-98775",
   "severity": "CRITICAL",
   "latitude": 28.6139,
   "longitude": 77.2090
 }
+
 
 ### ==========================================
 ### SCENARIO 2: Invalid JWT is Rejected
 ### ==========================================
 
 ### 2A. Attempt request with fake token
-POST http://localhost:8080/api/emergency
+POST {{host}}/api/emergency
 Content-Type: application/json
 Idempotency-Key: 123765
 Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.fake.token
@@ -82,7 +85,7 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.fake.token
 ### ==========================================
 
 ### 3A. Login as Paramedic (Copy the token!)
-POST http://localhost:8080/api/auth/login
+POST {{host}}/api/auth/login
 Content-Type: application/json
 
 {
@@ -91,7 +94,7 @@ Content-Type: application/json
 }
 
 ### 3B. Attempt to access a restricted Admin endpoint
-POST http://localhost:8080/api/hospitals
+POST {{host}}/api/hospitals
 Content-Type: application/json
 Idempotency-Key: 2398736
 Authorization: Bearer eyJhbGciOiJIUzM4NCJ9.eyJyb2xlIjoiUEFSQU1FRElDIiwic3ViIjoiMiIsImlhdCI6MTc4MTAxMjI2MiwiZXhwIjoxNzgxMDk4NjYyfQ.GsFh9Dc1fEuu_ycUtey6rz6U32C6bAEP-58oRtgWtFPxxSXU31r6SMpessMEuelH
@@ -111,7 +114,7 @@ Authorization: Bearer eyJhbGciOiJIUzM4NCJ9.eyJyb2xlIjoiUEFSQU1FRElDIiwic3ViIjoiM
 ### ==========================================
 
 ### 4A. Login as Admin (Copy the token!)
-POST http://localhost:8080/api/auth/login
+POST {{host}}/api/auth/login
 Content-Type: application/json
 
 {
@@ -120,10 +123,10 @@ Content-Type: application/json
 }
 
 ### 4B. Admin accesses restricted endpoint
-POST http://localhost:8080/api/hospitals
+POST {{host}}/api/hospitals
 Content-Type: application/json
 Idempotency-Key: 234546
-Authorization: Bearer eyJhbGciOiJIUzM4NCJ9.eyJyb2xlIjoiQURNSU4iLCJzdWIiOiIxIiwiaWF0IjoxNzgxMDEyMzA2LCJleHAiOjE3ODEwOTg3MDZ9.RFv_IOq1xpUlH2_wau0DULRwtsogMhcfihCgskKb7Tp46p7j1cGIGmVFDPh-Px3t
+Authorization: Bearer eyJhbGciOiJIUzM4NCJ9.eyJyb2xlIjoiQURNSU4iLCJzdWIiOiIyIiwiaWF0IjoxNzgxNTEyMzc2LCJleHAiOjE3ODE1OTg3NzZ9.J3EVcQ_rn6RZB_7x4mu2Zgn3RVU3JI1B--pRm2tJnZYZRQX61CKypRY0K2dhhZFV
 
 {
   "name": "City General",
@@ -134,34 +137,36 @@ Authorization: Bearer eyJhbGciOiJIUzM4NCJ9.eyJyb2xlIjoiQURNSU4iLCJzdWIiOiIxIiwia
 
 ### EXPECTED: 201 Created
 
+
 ### ==========================================
 ### ADD A NEW AMBULANCE
 ### ==========================================
 
 ### Add Advanced Life Support Ambulance
-POST http://localhost:8080/api/ambulances
+POST {{host}}/api/ambulances
 Content-Type: application/json
 Idempotency-Key: {{$uuid}}
-Authorization: Bearer eyJhbGciOiJIUzM4NCJ9.eyJyb2xlIjoiQURNSU4iLCJzdWIiOiIyIiwiaWF0IjoxNzgxNDk5OTM0LCJleHAiOjE3ODE1ODYzMzR9._8ltUwEV3Ekl5MeEUnhz7Sxkv8PnDJYRn1cThAkeqJbCqvU0agXTshtcO4XO-vc6
+Authorization: Bearer eyJhbGciOiJIUzM4NCJ9.eyJyb2xlIjoiQURNSU4iLCJzdWIiOiIyIiwiaWF0IjoxNzgxNTEyMzc2LCJleHAiOjE3ODE1OTg3NzZ9.J3EVcQ_rn6RZB_7x4mu2Zgn3RVU3JI1B--pRm2tJnZYZRQX61CKypRY0K2dhhZFV
 
 {
-  "registrationNumber": "DL-1C-AA-1123",
+  "registrationNumber": "DL-1D-AA-1123",
   "capabilities": "ALS, Ventilator, Defibrillator",
   "crewInfo": "2 Paramedics, 1 Driver"
 }
+
 
 ### ==========================================
 ### ADD A NEW HOSPITAL
 ### ==========================================
 
 ### Admin accesses restricted endpoint using proper DTO payload
-POST http://localhost:8080/api/hospitals
+POST {{host}}/api/hospitals
 Content-Type: application/json
 Idempotency-Key: {{$uuid}}
-Authorization: Bearer eyJhbGciOiJIUzM4NCJ9.eyJyb2xlIjoiQURNSU4iLCJzdWIiOiIyIiwiaWF0IjoxNzgxNDk5OTM0LCJleHAiOjE3ODE1ODYzMzR9._8ltUwEV3Ekl5MeEUnhz7Sxkv8PnDJYRn1cThAkeqJbCqvU0agXTshtcO4XO-vc6
+Authorization: Bearer eyJhbGciOiJIUzM4NCJ9.eyJyb2xlIjoiQURNSU4iLCJzdWIiOiIyIiwiaWF0IjoxNzgxNTEyMzc2LCJleHAiOjE3ODE1OTg3NzZ9.J3EVcQ_rn6RZB_7x4mu2Zgn3RVU3JI1B--pRm2tJnZYZRQX61CKypRY0K2dhhZFV
 
 {
-  "hospitalName": "Apollo Downtown 5",
+  "hospitalName": "Apollo Downtown 7",
   "availableBeds": 250,
   "latitude": 28.6150,
   "longitude": 77.2100

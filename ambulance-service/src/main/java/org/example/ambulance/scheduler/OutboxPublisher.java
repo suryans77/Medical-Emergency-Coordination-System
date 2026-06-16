@@ -3,6 +3,8 @@ package org.example.ambulance.scheduler;
 import org.example.ambulance.entity.OutboxEvent;
 import org.example.ambulance.repository.OutboxRepository;
 import org.example.shared.config.KafkaTopics;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -16,10 +18,16 @@ public class OutboxPublisher {
 
     // 🛡️ UPGRADE 1: Strictly typed to <String, String> to prevent accidental JSON double-serialization
     private final KafkaTemplate<String, String> kafkaTemplate;
+    private final Counter outboxEventsPublished;
 
-    public OutboxPublisher(OutboxRepository outboxRepository, KafkaTemplate<String, String> kafkaTemplate) {
+    public OutboxPublisher(OutboxRepository outboxRepository,
+                           KafkaTemplate<String, String> kafkaTemplate,
+                           MeterRegistry meterRegistry) {
         this.outboxRepository = outboxRepository;
         this.kafkaTemplate = kafkaTemplate;
+        this.outboxEventsPublished = Counter.builder("outbox_events_published")
+                .description("Outbox events successfully published from the ambulance service")
+                .register(meterRegistry);
     }
 
     @Scheduled(fixedRate = 5000)
@@ -41,6 +49,7 @@ public class OutboxPublisher {
                 // This code only executes if Kafka actually confirmed receipt
                 event.setStatus("PUBLISHED");
                 outboxRepository.save(event);
+                outboxEventsPublished.increment();
                 System.out.println("📤 Outbox Poller: Published " + event.getEventType());
 
             } catch (Exception e) {

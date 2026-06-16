@@ -5,6 +5,8 @@ import org.example.case_.entity.OutboxEvent;
 import org.example.case_.repository.OutboxRepository;
 import org.example.shared.config.KafkaTopics;
 import org.example.shared.events.CaseCreatedEvent;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -12,10 +14,16 @@ public class CaseProducer {
 
     private final OutboxRepository outboxRepository;
     private final ObjectMapper objectMapper;
+    private final Counter outboxEventsCreated;
 
-    public CaseProducer(OutboxRepository outboxRepository, ObjectMapper objectMapper) {
+    public CaseProducer(OutboxRepository outboxRepository,
+                        ObjectMapper objectMapper,
+                        MeterRegistry meterRegistry) {
         this.outboxRepository = outboxRepository;
         this.objectMapper = objectMapper;
+        this.outboxEventsCreated = Counter.builder("outbox_events_stored")
+                .description("Outbox events written to the case service database")
+                .register(meterRegistry);
     }
 
     public void publishCaseCreated(CaseCreatedEvent event) {
@@ -32,6 +40,7 @@ public class CaseProducer {
 
             // 3. Save it to the database
             outboxRepository.save(outboxEvent);
+            outboxEventsCreated.increment();
             System.out.println("📦 OUTBOX SAVED: Case Created for Emergency ID: " + event.emergencyId());
         } catch (Exception e) {
             throw new RuntimeException("Failed to serialize CaseCreated for outbox", e);

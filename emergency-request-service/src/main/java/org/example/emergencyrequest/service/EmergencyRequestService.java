@@ -5,6 +5,8 @@ import org.example.emergencyrequest.producer.EmergencyRequestProducer;
 import org.example.emergencyrequest.repository.EmergencyRequestRepository;
 import org.example.shared.dto.EmergencyRequestDTO;
 import org.example.shared.events.EmergencyRequestedEvent;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,10 +18,16 @@ public class EmergencyRequestService {
 
     private final EmergencyRequestRepository repository;
     private final EmergencyRequestProducer producer;
+    private final Counter emergencyRequestsCounter;
 
-    public EmergencyRequestService(EmergencyRequestRepository repository, EmergencyRequestProducer producer) {
+    public EmergencyRequestService(EmergencyRequestRepository repository,
+                                   EmergencyRequestProducer producer,
+                                   MeterRegistry meterRegistry) {
         this.repository = repository;
         this.producer = producer;
+        this.emergencyRequestsCounter = Counter.builder("emergency_requests")
+                .description("Total emergency requests accepted by the emergency request service")
+                .register(meterRegistry);
     }
 
     @Transactional
@@ -44,6 +52,7 @@ public class EmergencyRequestService {
         );
 
         producer.publishEvent(event);
+        emergencyRequestsCounter.increment();
 
         return savedEntity.getId();
     }

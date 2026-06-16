@@ -43,17 +43,15 @@ public class EmergencyConsumer {
             ProcessedEventId id = new ProcessedEventId(eventIdString, CONSUMER_NAME);
 
             if (processedEventRepository.existsById(id)) {
-                System.out.println("⚠️ Duplicate emergency request detected! Skipping: " + eventIdString);
                 return;
             }
 
             // 4. BUSINESS LOGIC
-            System.out.println("🚨 Received new emergency request!");
             UUID emergencyId = event.emergencyId();
             double latitude = event.latitude();
             double longitude = event.longitude();
 
-            matchingService.processEmergency(emergencyId, latitude, longitude);
+            matchingService.processEmergency(emergencyId, latitude, longitude, event.createdAt());
 
             // 5. THE RECEIPT
             processedEventRepository.save(new ProcessedEvent(eventIdString, CONSUMER_NAME, Instant.now()));

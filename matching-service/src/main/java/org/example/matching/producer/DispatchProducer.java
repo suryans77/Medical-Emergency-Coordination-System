@@ -6,6 +6,8 @@ import org.example.matching.repository.OutboxRepository;
 import org.example.shared.config.KafkaTopics;
 import org.example.shared.events.DispatchAssignedEvent;
 import org.example.shared.events.HospitalAssignedEvent;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -13,10 +15,16 @@ public class DispatchProducer {
 
     private final OutboxRepository outboxRepository;
     private final ObjectMapper objectMapper; // Spring Boot provides this automatically for converting to JSON
+    private final Counter outboxEventsCreated;
 
-    public DispatchProducer(OutboxRepository outboxRepository, ObjectMapper objectMapper) {
+    public DispatchProducer(OutboxRepository outboxRepository,
+                            ObjectMapper objectMapper,
+                            MeterRegistry meterRegistry) {
         this.outboxRepository = outboxRepository;
         this.objectMapper = objectMapper;
+        this.outboxEventsCreated = Counter.builder("outbox_events_stored")
+                .description("Outbox events written to the matching service database")
+                .register(meterRegistry);
     }
 
     public void publishDispatch(DispatchAssignedEvent event) {
@@ -33,7 +41,7 @@ public class DispatchProducer {
 
             // 3. Save it to the database (The poller will pick this up later!)
             outboxRepository.save(outboxEvent);
-            System.out.println("📦 OUTBOX SAVED: Dispatch for Emergency " + event.emergencyId());
+            outboxEventsCreated.increment();
 
         } catch (Exception e) {
             throw new RuntimeException("Failed to serialize DispatchAssigned for outbox", e);
@@ -51,7 +59,7 @@ public class DispatchProducer {
             );
 
             outboxRepository.save(outboxEvent);
-            System.out.println("📦 OUTBOX SAVED: Hospital Assigned for Emergency " + event.emergencyId());
+            outboxEventsCreated.increment();
 
         } catch (Exception e) {
             throw new RuntimeException("Failed to serialize HospitalAssigned for outbox", e);

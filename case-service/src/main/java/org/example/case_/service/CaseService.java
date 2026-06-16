@@ -32,8 +32,9 @@ public class CaseService {
     @Transactional
     public void onDispatchAssigned(DispatchAssignedEvent event) {
         Instant now = Instant.now();
-        CaseCorrelation correlation = correlationRepository.findById(event.emergencyId())
-                .orElseGet(() -> new CaseCorrelation(event.emergencyId(), now));
+        correlationRepository.insertIfAbsent(event.emergencyId(), now);
+        CaseCorrelation correlation = correlationRepository.findByIdForUpdate(event.emergencyId())
+                .orElseThrow(() -> new IllegalStateException("Case correlation was not initialized"));
 
         correlation.setAmbulanceId(event.ambulanceId());
         if (event.hospitalId() != null) {
@@ -47,8 +48,9 @@ public class CaseService {
     @Transactional
     public void onHospitalAssigned(HospitalAssignedEvent event) {
         Instant now = Instant.now();
-        CaseCorrelation correlation = correlationRepository.findById(event.emergencyId())
-                .orElseGet(() -> new CaseCorrelation(event.emergencyId(), now));
+        correlationRepository.insertIfAbsent(event.emergencyId(), now);
+        CaseCorrelation correlation = correlationRepository.findByIdForUpdate(event.emergencyId())
+                .orElseThrow(() -> new IllegalStateException("Case correlation was not initialized"));
 
         correlation.setHospitalId(event.hospitalId());
         correlation.setHospitalName(event.hospitalName());
